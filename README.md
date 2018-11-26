@@ -55,6 +55,8 @@ of the cards perfectly while glueing them together.
 
 ### Alignment
 
+![An image of the settings window showing the alignment tab](https://github.com/DerElam/inkscape-extension-playing-cards/blob/master/images/settings_alignment.png)
+
 If *Align cards to grid* is enabled the lower left corner of each card is put on a grid point as defined by *Grid spacing*. This grid might be different from you document grid.
 
 The purpose of the grid alignment is that it allows you to easily copy items between cards even if the units of the cards and the document don't match.
