@@ -19,7 +19,7 @@ is aligned to a 5mm grid (although the card sizes are defined in inches). Crop
 marks for each card extend from the page border to the bleed area and between
 between bleed areas.
 
-![An image of typical output of the extension](https://github.com/DerElam/inkscape-extension-playing-cards/master/images/example_01.png)
+![An image of typical output of the extension](https://github.com/DerElam/inkscape-extension-playing-cards/blob/master/images/example_01.png)
 
 ## Installation
 
@@ -31,14 +31,14 @@ You must restart Inkscape after copying the files to your Inkscape extension fol
 
 ### Cards
 
-![An image of the settings window showing the cards tab](https://github.com/DerElam/inkscape-extension-playing-cards/master/images/settings_cards.png)
+![An image of the settings window showing the cards tab](https://github.com/DerElam/inkscape-extension-playing-cards/blob/master/images/settings_cards.png)
 
 Here you can define the width and height of your cards and also the width of
 the bleed area around the cards. Make sure that the right units are selected.
 
 ### Margins
 
-![An image of the settings window showing the margins tab](https://github.com/DerElam/inkscape-extension-playing-cards/master/images/settings_margins.png)
+![An image of the settings window showing the margins tab](https://github.com/DerElam/inkscape-extension-playing-cards/blob/master/images/settings_margins.png)
 
 Here you can define several different empty areas on your page. You can enter
 the minimal desired values, but the actual values might be larger depending on
@@ -46,7 +46,7 @@ the values for the bleed size and the alignment grid.
 
 ### Fold line
 
-![An image of the settings window showing the fold lines tab](https://github.com/DerElam/inkscape-extension-playing-cards/master/images/settings_foldlines.png)
+![An image of the settings window showing the fold lines tab](https://github.com/DerElam/inkscape-extension-playing-cards/blob/master/images/settings_foldlines.png)
 
 Here you can define whether or not you want a horizontal or vertical fold line
 or no fold line at all. A fold line is usefull if you want to have the fronts
