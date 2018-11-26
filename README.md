@@ -19,7 +19,7 @@ is aligned to a 5mm grid (although the card sizes are defined in inches). Crop
 marks for each card extend from the page border to the bleed area and between
 between bleed areas.
 
-![An image of typical output of the extension](https://github.com/DerElam/inkscape-extension-playing-cards/blob/master/images/example_01.png)
+![An image of typical output of the extension](https://github.com/DerElam/inkscape-extension-playing-cards/blob/master/images/ex_output.png)
 
 ## Installation
 
@@ -46,7 +46,7 @@ the values for the bleed size and the alignment grid.
 
 ### Fold line
 
-![An image of the settings window showing the fold lines tab](https://github.com/DerElam/inkscape-extension-playing-cards/blob/master/images/settings_foldlines.png)
+![An image of the settings window showing the fold lines tab](https://github.com/DerElam/inkscape-extension-playing-cards/blob/master/images/settings_foldline.png)
 
 Here you can define whether or not you want a horizontal or vertical fold line
 or no fold line at all. A fold line is usefull if you want to have the fronts
