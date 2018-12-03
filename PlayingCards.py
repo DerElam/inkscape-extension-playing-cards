@@ -1,11 +1,15 @@
 import inkex
 import simplestyle
 from math import ceil, floor
+import re
+from lxml import etree
 
 UNITS = {
-    "in": 72.0,
-    "cm": 72.0 / 2.54,
-    "mm": 72.0 / 25.4
+    "px": 1.0,
+    "pt": 96.0 / 72.0,
+    "in": 96.0,
+    "cm": 96.0 / 2.54,
+    "mm": 96.0 / 25.4
 }
 
 EPSILON = 1e-3
@@ -26,6 +30,37 @@ def roundDown(value, gridSize):
 
 def mirrorAbout(value, about):
     return 2.0 * about - value
+
+
+def convertUnit(sourceUnit, targetUnit):
+    if sourceUnit == targetUnit:
+        return 1.0
+    if not UNITS.has_key(sourceUnit):
+        raise ValueError("unexpected unit \"" + sourceUnit + "\"")
+    if not UNITS.has_key(targetUnit):
+        raise ValueError("unexpected unit \"" + targetUnit + "\"")
+    return UNITS[sourceUnit] / UNITS[targetUnit]
+
+
+def splitQuantity(quantity):
+    # matches a floating point number optionally followed by letters
+    pattern = re.compile('(?P<magnitude>[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)'
+                         '(?P<unit>[a-zA-Z]+)?')
+    match = re.match(pattern, quantity)
+    if match:
+        return (float(match.group("magnitude")), match.group("unit"))
+    else:
+        return (0, None)
+
+
+def convertQuantity(quantity, targetUnit):
+    return "{}{}".format(convertMagnitude(quantity, targetUnit), targetUnit)
+
+
+def convertMagnitude(quantity, targetUnit):
+    magnitude, sourceUnit = splitQuantity(quantity)
+    newMagnitude = magnitude * convertUnit(sourceUnit, targetUnit)
+    return newMagnitude
 
 
 def calculatePositionsWithoutFoldLine(pageSize, marginSize, cardSize,
@@ -178,31 +213,59 @@ class PlayingCardsExtension(inkex.Effect):
     def getOptions(self):
         # Read all values and their units from the options and convert them to
         # document units
-        self.pageWidth = self.unittouu(self.getDocumentWidth())
-        self.pageHeight = self.unittouu(self.getDocumentHeight())
-        self.cardWidth = self.unittouu(
+        self.pageWidth = self.toDocumentUnits(self.documentWidth())
+        self.pageHeight = self.toDocumentUnits(self.documentHeight())
+        self.cardWidth = self.toDocumentUnits(
             "{}{}".format(self.options.cardWidth,
                           self.options.cardWidthUnit))
-        self.cardHeight = self.unittouu(
+        self.cardHeight = self.toDocumentUnits(
             "{}{}".format(self.options.cardHeight,
                           self.options.cardHeightUnit))
-        self.bleedSize = self.unittouu(
+        self.bleedSize = self.toDocumentUnits(
             "{}{}".format(self.options.bleedSize,
                           self.options.bleedSizeUnit))
-        self.gridSize = self.unittouu(
+        self.gridSize = self.toDocumentUnits(
             "{}{}".format(self.options.gridSize,
                           self.options.gridSizeUnit))
-        self.minCardSpacing = self.unittouu(
+        self.minCardSpacing = self.toDocumentUnits(
             "{}{}".format(self.options.minCardSpacing,
                           self.options.minCardSpacingUnit))
-        self.minFoldLineSpacing = self.unittouu(
+        self.minFoldLineSpacing = self.toDocumentUnits(
             "{}{}".format(self.options.minFoldLineSpacing,
                           self.options.minFoldLineSpacingUnit))
-        self.pageMargin = self.unittouu(
+        self.pageMargin = self.toDocumentUnits(
             "{}{}".format(self.options.pageMargin,
                           self.options.pageMarginUnit))
         self.gridAligned = self.options.gridAligned
         self.foldLineType = self.options.foldLineType
+
+    def documentUnit(self):
+        # 1) find a unit in the viewbox
+        # 2) find a unit in the document width and height
+        # 3) fallback to px units
+        root = self.document.getroot()
+        quantities = []
+        quantities.extend(root.get("viewBox"))
+        quantities.append(root.get("width"))
+        quantities.append(root.get("height"))
+        for q in quantities:
+            m, u = splitQuantity(q)
+            if u:
+                return u
+        return "px"
+
+    def toDocumentUnits(self, quantity):
+        magnitude, unit = splitQuantity(quantity)
+        if unit:
+            return magnitude * convertUnit(unit, self.documentUnit())
+        else:
+            return magnitude
+
+    def documentWidth(self):
+        return self.document.getroot().get("width")
+
+    def documentHeight(self):
+        return self.document.getroot().get("height")
 
     def calculatePositions(self):
         if self.foldLineType == VERTICAL_FOLD_LINE:
@@ -274,7 +337,7 @@ class PlayingCardsExtension(inkex.Effect):
                       "width": str(self.cardWidth + 2.0 * self.bleedSize),
                       "height": str(self.cardHeight + 2.0 * self.bleedSize),
                       "stroke": "gray",
-                      "stroke-width": str(self.unittouu("0.25pt")),
+                      "stroke-width": str(self.toDocumentUnits("0.25pt")),
                       "fill": "none"}
 
         for y in self.verticalPositions:
@@ -288,7 +351,7 @@ class PlayingCardsExtension(inkex.Effect):
                       "width": str(self.cardWidth),
                       "height": str(self.cardHeight),
                       "stroke": "gray",
-                      "stroke-width": str(self.unittouu("1pt")),
+                      "stroke-width": str(self.toDocumentUnits("1pt")),
                       "fill": "none"}
 
         for y in self.verticalPositions:
@@ -298,7 +361,7 @@ class PlayingCardsExtension(inkex.Effect):
 
     def createFoldLine(self, parent):
         attributes = {"stroke": "black",
-                      "stroke-width": str(self.unittouu("0.25pt")),
+                      "stroke-width": str(self.toDocumentUnits("0.25pt")),
                       "stroke-dasharray": "2,1",
                       "fill": "none"}
 
@@ -315,7 +378,7 @@ class PlayingCardsExtension(inkex.Effect):
 
     def createCropLines(self, parent):
         attributes = {"stroke": "black",
-                      "stroke-width": str(self.unittouu("0.25pt")),
+                      "stroke-width": str(self.toDocumentUnits("0.25pt")),
                       "fill": "none"}
 
         # (begin, end) pairs for vertical crop line between bleeds
@@ -369,10 +432,10 @@ class PlayingCardsExtension(inkex.Effect):
                       "width": str(self.pageWidth - 2.0 * self.pageMargin),
                       "height": str(self.pageHeight - 2.0 * self.pageMargin),
                       "stroke": "gray",
-                      "stroke-width": str(self.unittouu("0.25pt")),
+                      "stroke-width": str(self.toDocumentUnits("0.25pt")),
                       "stroke-dasharray": "0.5,0.5",
                       "fill": "none"}
-        
+
         inkex.etree.SubElement(parent, "rect", attributes)
 
     def createMask(self, parent):
@@ -385,7 +448,7 @@ class PlayingCardsExtension(inkex.Effect):
             self.pageWidth, 0,
             self.pageWidth, self.pageHeight,
             0, self.pageHeight)
-        
+
         for y in self.verticalPositions:
             for x in self.horizontalPositions:
                 path += " M {},{} {},{} {},{} {},{} Z".format(
@@ -394,7 +457,7 @@ class PlayingCardsExtension(inkex.Effect):
                     x + self.cardWidth, y + self.cardHeight,
                     x, y + self.cardHeight)
 
-        attributes["d"] = path                
+        attributes["d"] = path
         inkex.etree.SubElement(parent, "path", attributes)
 
     def effect(self):
@@ -417,7 +480,6 @@ class PlayingCardsExtension(inkex.Effect):
 
         cropLinesGroup = self.createGroup(printingLayer, "crop lines")
         self.createCropLines(cropLinesGroup)
-
 
 
 if __name__ == '__main__':
