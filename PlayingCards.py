@@ -35,11 +35,15 @@ def mirrorAbout(value, about):
 def convertUnit(sourceUnit, targetUnit):
     if sourceUnit == targetUnit:
         return 1.0
-    if not UNITS.has_key(sourceUnit):
-        raise ValueError("unexpected unit \"" + sourceUnit + "\"")
-    if not UNITS.has_key(targetUnit):
-        raise ValueError("unexpected unit \"" + targetUnit + "\"")
-    return UNITS[sourceUnit] / UNITS[targetUnit]
+    if not type(sourceUnit) == float:
+        if not UNITS.has_key(sourceUnit):
+            raise ValueError("unexpected unit \"" + sourceUnit + "\"")
+        sourceUnit = UNITS[sourceUnit]
+    if not type(targetUnit) == float:
+        if not UNITS.has_key(targetUnit):
+            raise ValueError("unexpected unit \"" + targetUnit + "\"")
+        targetUnit = UNITS[targetUnit]
+    return sourceUnit / targetUnit
 
 
 def splitQuantity(quantity):
@@ -54,7 +58,7 @@ def splitQuantity(quantity):
 
 
 def convertQuantity(quantity, targetUnit):
-    return "{}{}".format(convertMagnitude(quantity, targetUnit), targetUnit)
+    return "{0}{1}".format(convertMagnitude(quantity, targetUnit), targetUnit)
 
 
 def convertMagnitude(quantity, targetUnit):
@@ -149,6 +153,8 @@ class PlayingCardsExtension(inkex.Effect):
     def __init__(self):
         inkex.Effect.__init__(self)
 
+        self.userUnit = None
+
         self.pageWidth = None
         self.pageHeight = None
         self.cardWidth = None
@@ -213,53 +219,72 @@ class PlayingCardsExtension(inkex.Effect):
     def getOptions(self):
         # Read all values and their units from the options and convert them to
         # document units
-        self.pageWidth = self.toDocumentUnits(self.documentWidth())
-        self.pageHeight = self.toDocumentUnits(self.documentHeight())
-        self.cardWidth = self.toDocumentUnits(
-            "{}{}".format(self.options.cardWidth,
+        self.pageWidth = self.toUserUnit(self.documentWidth())
+        self.pageHeight = self.toUserUnit(self.documentHeight())
+        self.cardWidth = self.toUserUnit(
+            "{0}{1}".format(self.options.cardWidth,
                           self.options.cardWidthUnit))
-        self.cardHeight = self.toDocumentUnits(
-            "{}{}".format(self.options.cardHeight,
+        self.cardHeight = self.toUserUnit(
+            "{0}{1}".format(self.options.cardHeight,
                           self.options.cardHeightUnit))
-        self.bleedSize = self.toDocumentUnits(
-            "{}{}".format(self.options.bleedSize,
+        self.bleedSize = self.toUserUnit(
+            "{0}{1}".format(self.options.bleedSize,
                           self.options.bleedSizeUnit))
-        self.gridSize = self.toDocumentUnits(
-            "{}{}".format(self.options.gridSize,
+        self.gridSize = self.toUserUnit(
+            "{0}{1}".format(self.options.gridSize,
                           self.options.gridSizeUnit))
-        self.minCardSpacing = self.toDocumentUnits(
-            "{}{}".format(self.options.minCardSpacing,
+        self.minCardSpacing = self.toUserUnit(
+            "{0}{1}".format(self.options.minCardSpacing,
                           self.options.minCardSpacingUnit))
-        self.minFoldLineSpacing = self.toDocumentUnits(
-            "{}{}".format(self.options.minFoldLineSpacing,
+        self.minFoldLineSpacing = self.toUserUnit(
+            "{0}{1}".format(self.options.minFoldLineSpacing,
                           self.options.minFoldLineSpacingUnit))
-        self.pageMargin = self.toDocumentUnits(
-            "{}{}".format(self.options.pageMargin,
+        self.pageMargin = self.toUserUnit(
+            "{0}{1}".format(self.options.pageMargin,
                           self.options.pageMarginUnit))
         self.gridAligned = self.options.gridAligned
         self.foldLineType = self.options.foldLineType
 
-    def documentUnit(self):
-        # 1) find a unit in the viewbox
-        # 2) find a unit in the document width and height
-        # 3) fallback to px units
-        root = self.document.getroot()
-        quantities = []
-        quantities.extend(root.get("viewBox"))
-        quantities.append(root.get("width"))
-        quantities.append(root.get("height"))
-        for q in quantities:
-            m, u = splitQuantity(q)
-            if u:
-                return u
-        return "px"
+        
+    def getUserUnit(self):
+        if not self.userUnit: 
+            # If there is a viewBox use that to determine the userUnit.  Either
+            # the viewBox has a unit or calculate a unit from the ratio between
+            # page size and viewBox size.
+            root = self.document.getroot()
+            viewBox = root.get("viewBox").split()
+            if len(viewBox) == 4:
+                viewBoxWidth, viewBoxWidthUnit = splitQuantity(viewBox[2])
+                if viewBoxWidthUnit:
+                    # viewBox has units
+                    self.userUnit = viewBoxWidthUnit
+                else:
+                    # viewBox has no units
+                    documentWidth, documentWidthUnit = splitQuantity(self.documentWidth())
+                    self.userUnit = documentWidth / viewBoxWidth
+                    if documentWidthUnit:
+                        self.userUnit *= UNITS[documentWidthUnit]
+                return self.userUnit
+            
+            # If there is no (valid) viewBox, use page units as user units
+            documentWidth, documentWidthUnit = splitQuantity(self.documentWidth())
+            if documentWidthUnit:
+                self.userUnit = UNITS[documentWidthUnit]
+            else:
+                # This might be problematic because v0.91 uses 90dpi and v0.92
+                # uses 96dpi
+                self.userUnit = UNITS["px"]
 
-    def toDocumentUnits(self, quantity):
+        return self.userUnit
+
+
+    def toUserUnit(self, quantity):
         magnitude, unit = splitQuantity(quantity)
         if unit:
-            return magnitude * convertUnit(unit, self.documentUnit())
+            return magnitude * convertUnit(unit, self.getUserUnit())
         else:
             return magnitude
+
 
     def documentWidth(self):
         return self.document.getroot().get("width")
@@ -321,7 +346,7 @@ class PlayingCardsExtension(inkex.Effect):
 
         # The Inkscape y-axis runs from bottom to top, the SVG y-axis runs from
         # top to bottom. Therefore we need to transform all y coordinates.
-        layer.set("transform", "matrix(1 0 0 -1 0 {})".format(self.pageHeight))
+        layer.set("transform", "matrix(1 0 0 -1 0 {0})".format(self.pageHeight))
 
         # Lock the layer
         layer.set(inkex.addNS("insensitive", "sodipodi"), "true")
@@ -337,12 +362,12 @@ class PlayingCardsExtension(inkex.Effect):
                       "width": str(self.cardWidth + 2.0 * self.bleedSize),
                       "height": str(self.cardHeight + 2.0 * self.bleedSize),
                       "stroke": "gray",
-                      "stroke-width": str(self.toDocumentUnits("0.25pt")),
+                      "stroke-width": str(self.toUserUnit("0.25pt")),
                       "fill": "none"}
 
         for y in self.verticalPositions:
             for x in self.horizontalPositions:
-                attributes["transform"] = "translate({},{})".format(x, y)
+                attributes["transform"] = "translate({0},{1})".format(x, y)
                 inkex.etree.SubElement(parent, "rect", attributes)
 
     def createCards(self, parent):
@@ -351,25 +376,25 @@ class PlayingCardsExtension(inkex.Effect):
                       "width": str(self.cardWidth),
                       "height": str(self.cardHeight),
                       "stroke": "gray",
-                      "stroke-width": str(self.toDocumentUnits("1pt")),
+                      "stroke-width": str(self.toUserUnit("1pt")),
                       "fill": "none"}
 
         for y in self.verticalPositions:
             for x in self.horizontalPositions:
-                attributes["transform"] = "translate({},{})".format(x, y)
+                attributes["transform"] = "translate({0},{1})".format(x, y)
                 inkex.etree.SubElement(parent, "rect", attributes)
 
     def createFoldLine(self, parent):
         attributes = {"stroke": "black",
-                      "stroke-width": str(self.toDocumentUnits("0.25pt")),
+                      "stroke-width": str(self.toUserUnit("0.25pt")),
                       "stroke-dasharray": "2,1",
                       "fill": "none"}
 
         if self.foldLineType == HORIZONTAL_FOLD_LINE:
-            attributes["d"] = "M 0,{} H {}".format(
+            attributes["d"] = "M 0,{0} H {1}".format(
                 self.foldLinePosition, self.pageWidth)
         elif self.foldLineType == VERTICAL_FOLD_LINE:
-            attributes["d"] = "M {},0 V {}".format(
+            attributes["d"] = "M {0},0 V {1}".format(
                 self.foldLinePosition, self.pageHeight)
         else:
             return
@@ -378,7 +403,7 @@ class PlayingCardsExtension(inkex.Effect):
 
     def createCropLines(self, parent):
         attributes = {"stroke": "black",
-                      "stroke-width": str(self.toDocumentUnits("0.25pt")),
+                      "stroke-width": str(self.toUserUnit("0.25pt")),
                       "fill": "none"}
 
         # (begin, end) pairs for vertical crop line between bleeds
@@ -391,14 +416,14 @@ class PlayingCardsExtension(inkex.Effect):
         pairs.append((begin, self.pageHeight))
 
         # One crop line consists of many short strokes
-        attributes["d"] = " ".join(["M 0,{} 0,{}".format(begin, end)
+        attributes["d"] = " ".join(["M 0,{0} 0,{1}".format(begin, end)
                                     for (begin, end) in pairs])
 
         # Shifted copies of the crop line
         for x in self.horizontalPositions:
-            attributes["transform"] = "translate({},0)".format(x)
+            attributes["transform"] = "translate({0},0)".format(x)
             inkex.etree.SubElement(parent, "path", attributes)
-            attributes["transform"] = "translate({},0)".format(
+            attributes["transform"] = "translate({0},0)".format(
                 x + self.cardWidth)
             inkex.etree.SubElement(parent, "path", attributes)
 
@@ -412,14 +437,14 @@ class PlayingCardsExtension(inkex.Effect):
         pairs.append((begin, self.pageWidth))
 
         # One crop line consists of many short strokes
-        attributes["d"] = " ".join(["M {},0 {},0".format(begin, end)
+        attributes["d"] = " ".join(["M {0},0 {1},0".format(begin, end)
                                     for (begin, end) in pairs])
 
         # Shifted copies of the crop line
         for y in self.verticalPositions:
-            attributes["transform"] = "translate(0,{})".format(y)
+            attributes["transform"] = "translate(0,{0})".format(y)
             inkex.etree.SubElement(parent, "path", attributes)
-            attributes["transform"] = "translate(0,{})".format(
+            attributes["transform"] = "translate(0,{0})".format(
                 y + self.cardHeight)
             inkex.etree.SubElement(parent, "path", attributes)
 
@@ -432,7 +457,7 @@ class PlayingCardsExtension(inkex.Effect):
                       "width": str(self.pageWidth - 2.0 * self.pageMargin),
                       "height": str(self.pageHeight - 2.0 * self.pageMargin),
                       "stroke": "gray",
-                      "stroke-width": str(self.toDocumentUnits("0.25pt")),
+                      "stroke-width": str(self.toUserUnit("0.25pt")),
                       "stroke-dasharray": "0.5,0.5",
                       "fill": "none"}
 
@@ -443,7 +468,7 @@ class PlayingCardsExtension(inkex.Effect):
                       "fill": "white",
                       "fill-rule": "evenodd"}
 
-        path = "M {},{} {},{} {},{} {},{} Z".format(
+        path = "M {0},{1} {2},{3} {4},{5} {6},{7} Z".format(
             0, 0,
             self.pageWidth, 0,
             self.pageWidth, self.pageHeight,
@@ -451,7 +476,7 @@ class PlayingCardsExtension(inkex.Effect):
 
         for y in self.verticalPositions:
             for x in self.horizontalPositions:
-                path += " M {},{} {},{} {},{} {},{} Z".format(
+                path += " M {0},{1} {2},{3} {4},{5} {6},{7} Z".format(
                     x, y,
                     x + self.cardWidth, y,
                     x + self.cardWidth, y + self.cardHeight,
