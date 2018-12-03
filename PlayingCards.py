@@ -1,8 +1,6 @@
 import inkex
-import simplestyle
 from math import ceil, floor
 import re
-from lxml import etree
 
 UNITS = {
     "px": 1.0,
@@ -223,31 +221,30 @@ class PlayingCardsExtension(inkex.Effect):
         self.pageHeight = self.toUserUnit(self.documentHeight())
         self.cardWidth = self.toUserUnit(
             "{0}{1}".format(self.options.cardWidth,
-                          self.options.cardWidthUnit))
+                            self.options.cardWidthUnit))
         self.cardHeight = self.toUserUnit(
             "{0}{1}".format(self.options.cardHeight,
-                          self.options.cardHeightUnit))
+                            self.options.cardHeightUnit))
         self.bleedSize = self.toUserUnit(
             "{0}{1}".format(self.options.bleedSize,
-                          self.options.bleedSizeUnit))
+                            self.options.bleedSizeUnit))
         self.gridSize = self.toUserUnit(
             "{0}{1}".format(self.options.gridSize,
-                          self.options.gridSizeUnit))
+                            self.options.gridSizeUnit))
         self.minCardSpacing = self.toUserUnit(
             "{0}{1}".format(self.options.minCardSpacing,
-                          self.options.minCardSpacingUnit))
+                            self.options.minCardSpacingUnit))
         self.minFoldLineSpacing = self.toUserUnit(
             "{0}{1}".format(self.options.minFoldLineSpacing,
-                          self.options.minFoldLineSpacingUnit))
+                            self.options.minFoldLineSpacingUnit))
         self.pageMargin = self.toUserUnit(
             "{0}{1}".format(self.options.pageMargin,
-                          self.options.pageMarginUnit))
+                            self.options.pageMarginUnit))
         self.gridAligned = self.options.gridAligned
         self.foldLineType = self.options.foldLineType
 
-        
     def getUserUnit(self):
-        if not self.userUnit: 
+        if not self.userUnit:
             # If there is a viewBox use that to determine the userUnit.  Either
             # the viewBox has a unit or calculate a unit from the ratio between
             # page size and viewBox size.
@@ -260,14 +257,16 @@ class PlayingCardsExtension(inkex.Effect):
                     self.userUnit = viewBoxWidthUnit
                 else:
                     # viewBox has no units
-                    documentWidth, documentWidthUnit = splitQuantity(self.documentWidth())
+                    documentWidth, documentWidthUnit = splitQuantity(
+                        self.documentWidth())
                     self.userUnit = documentWidth / viewBoxWidth
                     if documentWidthUnit:
                         self.userUnit *= UNITS[documentWidthUnit]
                 return self.userUnit
-            
+
             # If there is no (valid) viewBox, use page units as user units
-            documentWidth, documentWidthUnit = splitQuantity(self.documentWidth())
+            documentWidth, documentWidthUnit = splitQuantity(
+                self.documentWidth())
             if documentWidthUnit:
                 self.userUnit = UNITS[documentWidthUnit]
             else:
@@ -277,14 +276,12 @@ class PlayingCardsExtension(inkex.Effect):
 
         return self.userUnit
 
-
     def toUserUnit(self, quantity):
         magnitude, unit = splitQuantity(quantity)
         if unit:
             return magnitude * convertUnit(unit, self.getUserUnit())
         else:
             return magnitude
-
 
     def documentWidth(self):
         return self.document.getroot().get("width")
@@ -346,7 +343,8 @@ class PlayingCardsExtension(inkex.Effect):
 
         # The Inkscape y-axis runs from bottom to top, the SVG y-axis runs from
         # top to bottom. Therefore we need to transform all y coordinates.
-        layer.set("transform", "matrix(1 0 0 -1 0 {0})".format(self.pageHeight))
+        layer.set(
+            "transform", "matrix(1 0 0 -1 0 {0})".format(self.pageHeight))
 
         # Lock the layer
         layer.set(inkex.addNS("insensitive", "sodipodi"), "true")
