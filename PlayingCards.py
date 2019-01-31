@@ -34,11 +34,11 @@ def convertUnit(sourceUnit, targetUnit):
     if sourceUnit == targetUnit:
         return 1.0
     if not type(sourceUnit) == float:
-        if not UNITS.has_key(sourceUnit):
+        if not sourceUnit in UNITS.keys():
             raise ValueError("unexpected unit \"" + sourceUnit + "\"")
         sourceUnit = UNITS[sourceUnit]
     if not type(targetUnit) == float:
-        if not UNITS.has_key(targetUnit):
+        if not sourceUnit in UNITS.keys():
             raise ValueError("unexpected unit \"" + targetUnit + "\"")
         targetUnit = UNITS[targetUnit]
     return sourceUnit / targetUnit
