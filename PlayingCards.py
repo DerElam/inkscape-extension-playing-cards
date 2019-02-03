@@ -1,7 +1,14 @@
-import inkex
 from math import ceil, floor
 import re
+import inkex
 
+
+# Constants
+# =========
+
+
+# A unit is represented as a conversion factor relative to the pixel unit. The
+# keys must be identical to the optiongroup options defined in the .inx file.
 UNITS = {
     "px": 1.0,
     "pt": 96.0 / 72.0,
@@ -10,44 +17,108 @@ UNITS = {
     "mm": 96.0 / 25.4
 }
 
+# EPSILON is used as a threshold by the rounding functions
 EPSILON = 1e-3
 
+# FOLD_LINE_TYPES defines the accepted values for horizontal and vertical
+# fold lines that can be set on the command line.
 NO_FOLD_LINE = "NoFoldLine"
 HORIZONTAL_FOLD_LINE = "HorizontalFoldLine"
 VERTICAL_FOLD_LINE = "VerticalFoldLine"
 FOLD_LINE_TYPES = [NO_FOLD_LINE, HORIZONTAL_FOLD_LINE, VERTICAL_FOLD_LINE]
 
 
-def roundUp(value, gridSize):
-    return ceil(value / gridSize - EPSILON) * gridSize
+# Functions that change positions in some way
+# ===========================================
 
 
-def roundDown(value, gridSize):
-    return floor(value / gridSize + EPSILON) * gridSize
+def round_up(value, grid_size):
+    """
+    Return the smallest grid point that is greater or equal to the value.
+
+    :type value: float
+    :type grid_size: float
+    :rtype: float
+    """
+    return ceil(value / grid_size - EPSILON) * grid_size
 
 
-def mirrorAbout(value, about):
-    return 2.0 * about - value
+def round_down(value, grid_size):
+    """
+    Return the greatest grid point that is less or equal to the value.
+
+    :type value: float
+    :type grid_size: float
+    :rtype: float
+     """
+    return floor(value / grid_size + EPSILON) * grid_size
 
 
-def convertUnit(sourceUnit, targetUnit):
-    if sourceUnit == targetUnit:
+def mirror_at(value, at):
+    """
+    Reflect the value at a given point.
+
+    :type value: float
+    :type at: float
+    :rtype: float
+    """
+    return 2.0 * at - value
+
+
+# Functions related to quantities and units
+# =========================================
+
+
+def convert_unit(source_unit, target_unit):
+    """
+    Returns a factor that converts from one unit to another.
+
+    :type source_unit: str | float
+    :type target_unit: str | float
+    :rtype: float
+    """
+
+    # If the units are the same the conversion factor is obviously 1
+    if source_unit == target_unit:
         return 1.0
-    if not type(sourceUnit) == float:
-        if not sourceUnit in UNITS.keys():
-            raise ValueError("unexpected unit \"" + sourceUnit + "\"")
-        sourceUnit = UNITS[sourceUnit]
-    if not type(targetUnit) == float:
-        if not sourceUnit in UNITS.keys():
-            raise ValueError("unexpected unit \"" + targetUnit + "\"")
-        targetUnit = UNITS[targetUnit]
-    return sourceUnit / targetUnit
+
+    # If the unit is given as a float nothing needs to be done. Otherwise we
+    # try to find the unit and its float value in the dictionary of valid
+    # units.
+    if not isinstance(source_unit, float):
+        if source_unit not in UNITS.keys():
+            raise ValueError("unexpected unit \"" + source_unit + "\"")
+        source_unit = UNITS[source_unit]
+    if not isinstance(target_unit, float):
+        if target_unit not in UNITS.keys():
+            raise ValueError("unexpected unit \"" + target_unit + "\"")
+        target_unit = UNITS[target_unit]
+
+    return source_unit / target_unit
 
 
-def splitQuantity(quantity):
-    # matches a floating point number optionally followed by letters
-    pattern = re.compile('(?P<magnitude>[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)'
-                         '(?P<unit>[a-zA-Z]+)?')
+def make_quantity(magnitude, unit):
+    """
+    Create a quantity from a magnitude and a unit.
+
+    :type magnitude: float
+    :type unit: str
+    """
+    return "{0}{1}".format(magnitude, unit)
+
+
+def split_quantity(quantity):
+    """
+    Split a quantity into its magnitude and unit and return them as a tuple.
+
+    :type quantity: str
+    :rtype: (float, str) | (float, NoneType)
+    """
+
+    # Matches a floating point number optionally followed by letters. The
+    # floating point number is the magnitude and the letters are the unit.
+    pattern = re.compile(r'(?P<magnitude>[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)'
+                         r'(?P<unit>[a-zA-Z]+)?')
     match = re.match(pattern, quantity)
     if match:
         return (float(match.group("magnitude")), match.group("unit"))
@@ -55,456 +126,677 @@ def splitQuantity(quantity):
         return (0, None)
 
 
-def convertQuantity(quantity, targetUnit):
-    return "{0}{1}".format(convertMagnitude(quantity, targetUnit), targetUnit)
+def convert_quantity(quantity, target_unit):
+    """
+    Convert the unit of a quantity to another unit.
+
+    :type quantity: str
+    :type taget_unit: str | float
+    :rtype: str
+    """
+    return "{0}{1}".format(convert_magnitude(quantity, target_unit), target_unit)
 
 
-def convertMagnitude(quantity, targetUnit):
-    magnitude, sourceUnit = splitQuantity(quantity)
-    newMagnitude = magnitude * convertUnit(sourceUnit, targetUnit)
-    return newMagnitude
+def convert_magnitude(quantity, target_unit):
+    """
+    Convert the unit of a quantity to another unit and return only the new magnitude.
+
+    :type quantity: str
+    :type target_unit: str | float
+    :rtype: float
+    """
+    magnitude, source_unit = split_quantity(quantity)
+    new_magnitude = magnitude * convert_unit(source_unit, target_unit)
+    return new_magnitude
 
 
-def calculatePositionsWithoutFoldLine(pageSize, marginSize, cardSize,
-                                      bleedSize, gridSize, minSpacing,
-                                      gridAligned):
-    # First card
-    cardBegin = marginSize + bleedSize
-    if gridAligned:
-        cardBegin = roundUp(cardBegin, gridSize)
-    cardEnd = cardBegin + cardSize
+# Functions related to the placement of cards
+# ===========================================
 
-    # Space between cards
-    spacing = max(minSpacing, 2.0 * bleedSize)
-    if gridAligned:
-        spacing = roundUp(cardEnd + spacing, gridSize) - cardEnd
 
-    # Add cards until a bleed is beyond the page margin
+def calculate_positions_without_fold_line(page_size, margin_size, card_size,
+                                          bleed_size, grid_size, min_spacing,
+                                          grid_aligned):
+    """
+    Position cards along one direction of the page without a fold line.
+
+    The calculated positions are the positions of the right edges or bottom
+    edges of the cards. The other edges and the positions of the bleeds can be
+    easily derived by adding card_size, -bleed_size, and card_size+bleed_size.
+
+    All sizes and spacings must be given as magnitudes, i.e. without units.
+    Their units are assumed to be identical but can be arbitrary.
+
+    :param page_size: The width or height of the page.
+    :type page_size: float
+    :param margin_size: The empty margin of the page. Nothing will be placed in
+    the margin.
+    :type margin_size: float
+    :param card_size: The width or height of each card.
+    :type card_size: float
+    :param bleed_size: The bleed around each card. This can be zero.
+    :type bleed_size: float
+    :param grid_size: The size of the alignment grid. The value is ignored if
+    grid_aligned is False.
+    :type grid_size: float
+    :param min_spacing: The minimum distance between two cards.
+    :type min_spacing: float
+    :param grid_aligned: Whether or not the beginning of a card should be on a
+    grid point.
+    :type grid_aligned: bool
+    :return: A list containing the beginnings of each card
+    :rtype: [float]
+    """
+    # The bleed of the first card begins where the page margin ends. The card
+    # is then moved to the next grid point if grid_aligned is True.
+    card_begin = margin_size + bleed_size
+    if grid_aligned:
+        card_begin = round_up(card_begin, grid_size)
+    card_end = card_begin + card_size
+
+    # There are to bleeds between the end of the first card and the beginning
+    # of the next. The spacing between two cards is two bleeds or min_spacing,
+    # whichever is greater. If grid_aligned is True the next card is moved even
+    # farther away so that it begins at the next grid point.
+    spacing = max(min_spacing, 2.0 * bleed_size)
+    if grid_aligned:
+        spacing = round_up(card_end + spacing, grid_size) - card_end
+
+    # We add cards and spacings until we run out of enough empty space.
     cards = []
     remaining = 0
     while True:
-        cardEnd = cardBegin + cardSize
-        nextRemaining = pageSize - marginSize - cardEnd - bleedSize
-        if nextRemaining < 0:
+        card_end = card_begin + card_size
+        next_remaining = page_size - margin_size - card_end - bleed_size
+        if next_remaining < 0:
             break
-        remaining = nextRemaining
-        cards.append(cardBegin)
-        cardBegin = cardEnd + spacing
+        remaining = next_remaining
+        cards.append(card_begin)
+        card_begin = card_end + spacing
 
-    # Shift everything towards the center
+    # Shift everything towards the center of the page.
     shift = remaining / 2.0
-    if gridAligned:
-        shift = roundDown(shift, gridSize)
-
-    for i in range(len(cards)):
-        cards[i] += shift
+    if grid_aligned:
+        shift = round_down(shift, grid_size)
+    cards = [card + shift for card in cards]
 
     return cards
 
 
-def calculatePositionsWithFoldLine(pageSize, marginSize, cardSize,
-                                   bleedSize, gridSize, minSpacing,
-                                   minFoldLineSpacing, gridAligned):
-    # Space between the two cards at the fold line
-    centralSpacing = max(2.0 * minFoldLineSpacing,
-                         max(minSpacing, 2.0 * bleedSize))
+def calculate_positions_with_fold_line(page_size, margin_size, card_size,
+                                       bleed_size, grid_size, min_spacing,
+                                       min_fold_line_spacing, grid_aligned):
+    """
+    Position the cards along one direction of the page with a central fold line.
 
-    # First card before the fold line
-    cardBegin = (pageSize - centralSpacing) / 2.0 - cardSize
-    if gridAligned:
-        cardBegin = roundDown(cardBegin, gridSize)
-    cardEnd = cardBegin + cardSize
+    The calculated positions are the positions of the right edges or bottom
+    edges of the cards. The other edges and the positions of the bleeds can be
+    easily derived by adding card_size, -bleed_size, and card_size+bleed_size.
 
-    # Adjust the spacing between the two cards at the fold line so that both
-    # central cards are aligned to the grid
-    if gridAligned:
-        centralSpacing = roundUp(cardEnd + centralSpacing, gridSize) - cardEnd
+    All sizes and spacings must be given as magnitudes, i.e. without units.
+    Their units are assumed to be identical but can be arbitrary.
 
-    # Fold line is centered between the two central cards
-    foldLine = cardEnd + centralSpacing / 2.0
+    :param page_size: The width or height of the page.
+    :type page_size: float
+    :param margin_size: The empty margin of the page. Nothing will be placed in
+    the margin.
+    :type margin_size: float
+    :param card_size: The width or height of each card.
+    :type card_size: float
+    :param bleed_size: The bleed around each card. This can be zero.
+    :type bleed_size: float
+    :param grid_size: The size of the alignment grid. The value is ignored if
+    grid_aligned is False.
+    :type grid_size: float
+    :param min_spacing: The minimum distance between two cards.
+    :type min_spacing: float
+    :param min_fold_line_spacing: The minimum distance between a card and the 
+    fold line.
+    :type min_fold_line_spacing: float
+    :param grid_aligned: Whether or not the beginning of a card should be on a
+    grid point.
+    :type grid_aligned: bool
+    :return: A tuple with a list containing the beginnings of each card and the
+    position of the fold line.
+    :rtype: ([float], float)
+    """
+    # The spacing between the two central cards at the fold line must be at
+    # at least 2*bleed_size or 2*min_fold_line_spacing or min_spacing, 
+    # whichever is the greatest.
+    central_spacing = max(2.0 * min_fold_line_spacing,
+                          max(min_spacing, 2.0 * bleed_size))
 
-    # Spacing between the non-central cards
-    spacing = max(minSpacing, 2.0 * bleedSize)
-    if gridAligned:
-        spacing = roundUp(cardEnd + spacing, gridSize) - cardEnd
+    # First we assume that the fold line is at the center of the page. This
+    # might change a bit later if we want grid alignment. We then place the
+    # first card before the fold line so that there is an empty space of 
+    # central_spacing/2 between the card and the fold line.
+    card_begin = (page_size - central_spacing) / 2.0 - card_size
+    if grid_aligned:
+        card_begin = round_down(card_begin, grid_size)
+    card_end = card_begin + card_size
 
-    # Add cards to both sides of the fold line until a bleed is beyond the page
-    # margin
+    # The card on the other side can be placed by mirroring the first card at
+    # the fold line. But this card is not neccessarily grid aligned. We fix that
+    # by increasing the central spacing so that the first card on the other side
+    # of the fold line is also grid aligned.
+    if grid_aligned:
+        central_spacing = round_up(
+            card_end + central_spacing, grid_size) - card_end
+
+    # The fold line should not be at the center of the page but in the middle
+    # between the two central cards. If we don't use grid alignment then this
+    # is also the center of the page.
+    fold_line = card_end + central_spacing / 2.0
+
+    # The spacing between all remaining cards might be different because we
+    # don't use min_fold_line_spacing. But the calculation remains the same as
+    # for the two central cards.
+    spacing = max(min_spacing, 2.0 * bleed_size)
+    if grid_aligned:
+        spacing = round_up(card_end + spacing, grid_size) - card_end
+
+    # Now that we have calculated all spacings we start adding cards to both
+    # sides of the fold line beginning at the center and moving outwards.
     cards = []
     while True:
-        if cardBegin < marginSize:
+        if card_begin < margin_size:
             break
-        cards.append(cardBegin)
-        cards.append(mirrorAbout(cardEnd, foldLine))
-        cardBegin -= cardSize + spacing
-        cardEnd = cardBegin + cardSize
+        cards.append(card_begin)
+        cards.append(mirror_at(card_end, fold_line))
+        card_begin -= card_size + spacing
+        card_end = card_begin + card_size
 
-    # Sort the positions because right now the positions alternate between the
-    # left and right side of the fold line
+    # We sort the positions of the cards so that the positions start with the
+    # lowest and end with the highest value.
     cards.sort()
 
-    return (cards, foldLine)
+    return (cards, fold_line)
 
 
 class PlayingCardsExtension(inkex.Effect):
+    """
+    Implements the interface for Inkscape addons.
+
+    An instance of this class is created in main(). __init__() sets up the 
+    OptionParser provided by the base class to recognize all needed command 
+    line parameters. Then in main() inkex.Effect.affect() is called which then 
+    parses the command line and calls effect(). This is where we do our work.
+    """
+
+    # Constants passed from the command line
+    PAGE_WIDTH = None
+    PAGE_HEIGHT = None
+    CARD_WIDTH = None
+    CARD_HEIGHT = None
+    BLEED_SIZE = None
+    MIN_CARD_SPACING = None
+    MIN_FOLD_LINE_SPACING = None
+    PAGE_MARGIN = None
+    GRID_SIZE = None
+    ALIGN_TO_GRID = None
+    FOLD_LINE_TYPE = None
+
+    USER_UNIT = None                 # The unit used in the document
+    horizontal_card_positions = None # Calculated horizontal positions
+    vertical_card_positions = None   # Calculated vertical positions
+    fold_line_position = None        # Calculated position of the fold line
 
     def __init__(self):
+        """Initialize base class and its OptionParser."""
         inkex.Effect.__init__(self)
+        self.init_option_parser()
 
-        self.userUnit = None
+    def init_option_parser(self):
+        """
+        Initialize the OptionParser with recognized parameters.
 
-        self.pageWidth = None
-        self.pageHeight = None
-        self.cardWidth = None
-        self.cardHeight = None
-        self.bleedSize = None
-        self.minCardSpacing = None
-        self.minFoldSpacing = None
-        self.pageMargin = None
-        self.gridSize = None
-        self.gridAligned = None
-        self.foldLineType = None
+        The option names must be identical to those defined in the .inx file.
+        The option values are later used to initialize the class constants.
+        """
+        self.OptionParser.add_option("--pageName",
+                                     type="string")
 
-        self.horizontalCardPositions = None
-        self.verticalCardPositions = None
-        self.foldLinePosition = None
+        self.OptionParser.add_option("--cardWidth",
+                                     type="float",
+                                     action="store")
+        self.OptionParser.add_option("--cardWidthUnit",
+                                     type="choice",
+                                     choices=UNITS.keys(),
+                                     action="store")
 
-        self.addOptions()
+        self.OptionParser.add_option("--cardHeight",
+                                     type="float",
+                                     action="store")
+        self.OptionParser.add_option("--cardHeightUnit",
+                                     type="choice",
+                                     choices=UNITS.keys(),
+                                     action="store")
 
-    def addOptions(self):
-        self.OptionParser.add_option("--pageName", type="string")
+        self.OptionParser.add_option("--bleedSize",
+                                     type="float",
+                                     action="store")
+        self.OptionParser.add_option("--bleedSizeUnit",
+                                     type="choice",
+                                     choices=UNITS.keys(),
+                                     action="store")
 
-        self.OptionParser.add_option(
-            "--cardWidth", type="float", action="store")
-        self.OptionParser.add_option("--cardWidthUnit", type="choice", action="store",
-                                     choices=UNITS.keys())
+        self.OptionParser.add_option("--minCardSpacing",
+                                     type="float",
+                                     action="store")
+        self.OptionParser.add_option("--minCardSpacingUnit",
+                                     type="choice",
+                                     choices=UNITS.keys(),
+                                     action="store")
 
-        self.OptionParser.add_option(
-            "--cardHeight", type="float", action="store")
-        self.OptionParser.add_option("--cardHeightUnit", type="choice", action="store",
-                                     choices=UNITS.keys())
+        self.OptionParser.add_option("--minFoldLineSpacing",
+                                     type="float",
+                                     action="store")
+        self.OptionParser.add_option("--minFoldLineSpacingUnit",
+                                     type="choice",
+                                     choices=UNITS.keys(),
+                                     action="store")
 
-        self.OptionParser.add_option(
-            "--bleedSize", type="float", action="store")
-        self.OptionParser.add_option("--bleedSizeUnit", type="choice", action="store",
-                                     choices=UNITS.keys())
+        self.OptionParser.add_option("--pageMargin",
+                                     type="float",
+                                     action="store")
+        self.OptionParser.add_option("--pageMarginUnit",
+                                     type="choice",
+                                     choices=UNITS.keys(),
+                                     action="store")
 
-        self.OptionParser.add_option(
-            "--minCardSpacing", type="float", action="store")
-        self.OptionParser.add_option("--minCardSpacingUnit", type="choice", action="store",
-                                     choices=UNITS.keys())
+        self.OptionParser.add_option("--gridSize",
+                                     type="float",
+                                     action="store")
+        self.OptionParser.add_option("--gridSizeUnit",
+                                     type="choice",
+                                     choices=UNITS.keys(),
+                                     action="store")
 
-        self.OptionParser.add_option(
-            "--minFoldLineSpacing", type="float", action="store")
-        self.OptionParser.add_option("--minFoldLineSpacingUnit", type="choice", action="store",
-                                     choices=UNITS.keys())
+        self.OptionParser.add_option("--gridAligned",
+                                     type="inkbool",
+                                     action="store")
+        self.OptionParser.add_option("--foldLineType",
+                                     type="choice",
+                                     choices=FOLD_LINE_TYPES,
+                                     action="store")
 
-        self.OptionParser.add_option(
-            "--pageMargin", type="float", action="store")
-        self.OptionParser.add_option("--pageMarginUnit", type="choice", action="store",
-                                     choices=UNITS.keys())
+    def init_user_unit(self):
+        """
+        Determine the user unit from the document contents.
+        """
+        root = self.document.getroot()
+        view_box = root.get("viewBox")
 
-        self.OptionParser.add_option(
-            "--gridSize", type="float", action="store")
-        self.OptionParser.add_option("--gridSizeUnit", type="choice", action="store",
-                                     choices=UNITS.keys())
-
-        self.OptionParser.add_option(
-            "--gridAligned", type="inkbool", action="store")
-        self.OptionParser.add_option("--foldLineType", type="choice", action="store",
-                                     choices=FOLD_LINE_TYPES)
-
-    def getOptions(self):
-        # Read all values and their units from the options and convert them to
-        # document units
-        self.pageWidth = self.toUserUnit(self.documentWidth())
-        self.pageHeight = self.toUserUnit(self.documentHeight())
-        self.cardWidth = self.toUserUnit(
-            "{0}{1}".format(self.options.cardWidth,
-                            self.options.cardWidthUnit))
-        self.cardHeight = self.toUserUnit(
-            "{0}{1}".format(self.options.cardHeight,
-                            self.options.cardHeightUnit))
-        self.bleedSize = self.toUserUnit(
-            "{0}{1}".format(self.options.bleedSize,
-                            self.options.bleedSizeUnit))
-        self.gridSize = self.toUserUnit(
-            "{0}{1}".format(self.options.gridSize,
-                            self.options.gridSizeUnit))
-        self.minCardSpacing = self.toUserUnit(
-            "{0}{1}".format(self.options.minCardSpacing,
-                            self.options.minCardSpacingUnit))
-        self.minFoldLineSpacing = self.toUserUnit(
-            "{0}{1}".format(self.options.minFoldLineSpacing,
-                            self.options.minFoldLineSpacingUnit))
-        self.pageMargin = self.toUserUnit(
-            "{0}{1}".format(self.options.pageMargin,
-                            self.options.pageMarginUnit))
-        self.gridAligned = self.options.gridAligned
-        self.foldLineType = self.options.foldLineType
-
-    def getUserUnit(self):
-        if not self.userUnit:
-            # If there is a viewBox use that to determine the userUnit.  Either
-            # the viewBox has a unit or calculate a unit from the ratio between
-            # page size and viewBox size.
-            root = self.document.getroot()
-            viewBox = root.get("viewBox").split()
-            if len(viewBox) == 4:
-                viewBoxWidth, viewBoxWidthUnit = splitQuantity(viewBox[2])
-                if viewBoxWidthUnit:
-                    # viewBox has units
-                    self.userUnit = viewBoxWidthUnit
-                else:
-                    # viewBox has no units
-                    documentWidth, documentWidthUnit = splitQuantity(
-                        self.documentWidth())
-                    self.userUnit = documentWidth / viewBoxWidth
-                    if documentWidthUnit:
-                        self.userUnit *= UNITS[documentWidthUnit]
-                return self.userUnit
-
-            # If there is no (valid) viewBox, use page units as user units
-            documentWidth, documentWidthUnit = splitQuantity(
-                self.documentWidth())
-            if documentWidthUnit:
-                self.userUnit = UNITS[documentWidthUnit]
+        # If the document has a valid viewBox we try to derive the user unit
+        # from that.
+        valid_view_box = view_box and len(view_box.split()) == 4
+        if valid_view_box:
+            view_box = root.get("viewBox").split()
+            view_box_width, view_box_width_unit = split_quantity(view_box[2])
+            # If the viewBox has a unit use that.
+            if view_box_width_unit:
+                self.USER_UNIT = view_box_width_unit
+            # If the viewBox has no unit derive the unit from the ratio between
+            # the document width and the viewBox width.
+            else:
+                document_width, document_width_unit = split_quantity(
+                    self.document_width())
+                self.USER_UNIT = document_width / view_box_width
+                if document_width_unit:
+                    self.USER_UNIT *= UNITS[document_width_unit]
+        # If the document has no valid viewBox we try to derive the user unit
+        # from the document width.
+        else:
+            document_width, document_width_unit = split_quantity(
+                self.document_width())
+            if document_width_unit:
+                self.USER_UNIT = UNITS[document_width_unit]
             else:
                 # This might be problematic because v0.91 uses 90dpi and v0.92
                 # uses 96dpi
-                self.userUnit = UNITS["px"]
+                self.USER_UNIT = UNITS["px"]
 
-        return self.userUnit
+    def init_constants(self):
+        """
+        Initialize the class constants from the OptionParser values and the
+        document contents.
 
-    def toUserUnit(self, quantity):
-        magnitude, unit = splitQuantity(quantity)
-        if unit:
-            return magnitude * convertUnit(unit, self.getUserUnit())
-        else:
-            return magnitude
+        This converts all quantities from the unit given on the command line to
+        the user unit.
+        """
 
-    def documentWidth(self):
+        self.PAGE_WIDTH = self.to_user_unit(self.document_width())
+        self.PAGE_HEIGHT = self.to_user_unit(self.document_height())
+        self.CARD_WIDTH = self.to_user_unit(
+            make_quantity(self.options.cardWidth,
+                          self.options.cardWidthUnit))
+        self.CARD_HEIGHT = self.to_user_unit(
+            make_quantity(self.options.cardHeight,
+                          self.options.cardHeightUnit))
+        self.BLEED_SIZE = self.to_user_unit(
+            make_quantity(self.options.bleedSize,
+                          self.options.bleedSizeUnit))
+        self.GRID_SIZE = self.to_user_unit(
+            make_quantity(self.options.gridSize,
+                          self.options.gridSizeUnit))
+        self.MIN_CARD_SPACING = self.to_user_unit(
+            make_quantity(self.options.minCardSpacing,
+                          self.options.minCardSpacingUnit))
+        self.MIN_FOLD_LINE_SPACING = self.to_user_unit(
+            make_quantity(self.options.minFoldLineSpacing,
+                          self.options.minFoldLineSpacingUnit))
+        self.PAGE_MARGIN = self.to_user_unit(
+            make_quantity(self.options.pageMargin,
+                          self.options.pageMarginUnit))
+        self.ALIGN_TO_GRID = self.options.gridAligned
+        self.FOLD_LINE_TYPE = self.options.foldLineType
+
+    def effect(self):
+        self.init_user_unit()
+        self.init_constants()
+
+        self.calculate_positions()
+
+        non_printing_layer = self.create_layer("(template) cards and bleeds")
+        mask_layer = self.create_layer("(template) mask", is_visible=False)
+        printing_layer = self.create_layer("(template) fold and crop lines")
+
+        self.create_fold_line(printing_layer)
+        self.create_margin(printing_layer)
+        self.create_mask(mask_layer)
+
+        bleeds_group = self.create_group(non_printing_layer, "bleeds")
+        self.create_bleeds(bleeds_group)
+
+        cards_group = self.create_group(non_printing_layer, "cards")
+        self.create_cards(cards_group)
+
+        crop_lines_group = self.create_group(printing_layer, "crop lines")
+        self.create_crop_lines(crop_lines_group)
+
+    def to_user_unit(self, quantity):
+        """
+        Convert a quantity to the user unit and return its magnitude.
+
+        :type quantity: str
+        :rtype: float
+        """
+        return convert_magnitude(quantity, self.USER_UNIT)
+
+    def document_width(self):
+        """
+        Return the document width.
+
+        The width is read from the document. It may or may not contain a unit.
+        """
         return self.document.getroot().get("width")
 
-    def documentHeight(self):
+    def document_height(self):
+        """
+        Return the document height.
+
+        The height is read from the document. It may or may not contain a unit.
+        """
         return self.document.getroot().get("height")
 
-    def calculatePositions(self):
-        if self.foldLineType == VERTICAL_FOLD_LINE:
-            self.horizontalPositions, self.foldLinePosition = calculatePositionsWithFoldLine(
-                self.pageWidth,
-                self.pageMargin,
-                self.cardWidth,
-                self.bleedSize,
-                self.gridSize,
-                self.minCardSpacing,
-                self.minFoldLineSpacing,
-                self.gridAligned)
-        else:
-            self.horizontalPositions = calculatePositionsWithoutFoldLine(
-                self.pageWidth,
-                self.pageMargin,
-                self.cardWidth,
-                self.bleedSize,
-                self.gridSize,
-                self.minCardSpacing,
-                self.gridAligned)
+    def calculate_positions(self):
+        """
+        Calculate the horizontal and vertical positions of all cards.
 
-        if self.foldLineType == HORIZONTAL_FOLD_LINE:
-            self.verticalPositions, self.foldLinePosition = calculatePositionsWithFoldLine(
-                self.pageHeight,
-                self.pageMargin,
-                self.cardHeight,
-                self.bleedSize,
-                self.gridSize,
-                self.minCardSpacing,
-                self.minFoldLineSpacing,
-                self.gridAligned)
+        The results are stored in self.horizontal_card_positions,
+        self.vertical_card_positions, and self.fold_line_position.
+        """
+        if self.FOLD_LINE_TYPE == VERTICAL_FOLD_LINE:
+            self.horizontal_card_positions, self.fold_line_position = \
+                calculate_positions_with_fold_line(
+                    self.PAGE_WIDTH,
+                    self.PAGE_MARGIN,
+                    self.CARD_WIDTH,
+                    self.BLEED_SIZE,
+                    self.GRID_SIZE,
+                    self.MIN_CARD_SPACING,
+                    self.MIN_FOLD_LINE_SPACING,
+                    self.ALIGN_TO_GRID)
         else:
-            self.verticalPositions = calculatePositionsWithoutFoldLine(
-                self.pageHeight,
-                self.pageMargin,
-                self.cardHeight,
-                self.bleedSize,
-                self.gridSize,
-                self.minCardSpacing,
-                self.gridAligned)
+            self.horizontal_card_positions = \
+                calculate_positions_without_fold_line(
+                    self.PAGE_WIDTH,
+                    self.PAGE_MARGIN,
+                    self.CARD_WIDTH,
+                    self.BLEED_SIZE,
+                    self.GRID_SIZE,
+                    self.MIN_CARD_SPACING,
+                    self.ALIGN_TO_GRID)
 
-    def createGroup(self, parent, label):
+        if self.FOLD_LINE_TYPE == HORIZONTAL_FOLD_LINE:
+            self.vertical_card_positions, self.fold_line_position = \
+                calculate_positions_with_fold_line(
+                    self.PAGE_HEIGHT,
+                    self.PAGE_MARGIN,
+                    self.CARD_HEIGHT,
+                    self.BLEED_SIZE,
+                    self.GRID_SIZE,
+                    self.MIN_CARD_SPACING,
+                    self.MIN_FOLD_LINE_SPACING,
+                    self.ALIGN_TO_GRID)
+        else:
+            self.vertical_card_positions = \
+                calculate_positions_without_fold_line(
+                    self.PAGE_HEIGHT,
+                    self.PAGE_MARGIN,
+                    self.CARD_HEIGHT,
+                    self.BLEED_SIZE,
+                    self.GRID_SIZE,
+                    self.MIN_CARD_SPACING,
+                    self.ALIGN_TO_GRID)
+    
+    # Functions related to the structure of the document
+    # ==================================================
+
+    def create_group(self, parent, label):
+        """
+        Create a new group in the svg document.
+
+        :type parent: lxml.etree._Element
+        :type label: str
+        :rtype: lxml.etree._Element
+        """
         group = inkex.etree.SubElement(parent, "g")
         group.set(inkex.addNS("label", "inkscape"), label)
         return group
 
-    def createLayer(self, label, isVisible=True):
-        layer = self.createGroup(self.document.getroot(), label)
-        layer.set(inkex.addNS("groupmode", "inkscape"), "layer")
-        if not isVisible:
-            layer.set("style", "display:none")
+    def create_layer(self, label, is_visible=True, is_locked=True):
+        """
+        Create a new layer in the svg document.
 
+        :type label: str
+        :rtype: lxml.etree._Element
+        """
+        layer = self.create_group(self.document.getroot(), label)
+        layer.set(inkex.addNS("groupmode", "inkscape"), "layer")
         # The Inkscape y-axis runs from bottom to top, the SVG y-axis runs from
         # top to bottom. Therefore we need to transform all y coordinates.
         layer.set(
-            "transform", "matrix(1 0 0 -1 0 {0})".format(self.pageHeight))
+            "transform", "matrix(1 0 0 -1 0 {0})".format(self.PAGE_HEIGHT))
+
+        # Don't show the layer contents
+        if not is_visible:
+            layer.set("style", "display:none")
 
         # Lock the layer
-        layer.set(inkex.addNS("insensitive", "sodipodi"), "true")
+        if is_locked:
+            layer.set(inkex.addNS("insensitive", "sodipodi"), "true")
 
         return layer
 
-    def createBleeds(self, parent):
-        if self.bleedSize <= 0:
+    # Functions related to the contents of the document
+    # =================================================
+
+    def create_bleeds(self, parent):
+        """
+        Creates a rectangle for each bleed.
+
+        :type parent: lxml.etree._Element
+        """
+        if self.BLEED_SIZE <= 0:
             return
 
-        attributes = {"x": str(-self.bleedSize),
-                      "y": str(-self.bleedSize),
-                      "width": str(self.cardWidth + 2.0 * self.bleedSize),
-                      "height": str(self.cardHeight + 2.0 * self.bleedSize),
+        attributes = {"x": str(-self.BLEED_SIZE),
+                      "y": str(-self.BLEED_SIZE),
+                      "width": str(self.CARD_WIDTH + 2.0 * self.BLEED_SIZE),
+                      "height": str(self.CARD_HEIGHT + 2.0 * self.BLEED_SIZE),
                       "stroke": "gray",
-                      "stroke-width": str(self.toUserUnit("0.25pt")),
+                      "stroke-width": str(self.to_user_unit("0.25pt")),
                       "fill": "none"}
 
-        for y in self.verticalPositions:
-            for x in self.horizontalPositions:
+        for y in self.vertical_card_positions:
+            for x in self.horizontal_card_positions:
                 attributes["transform"] = "translate({0},{1})".format(x, y)
                 inkex.etree.SubElement(parent, "rect", attributes)
 
-    def createCards(self, parent):
+    def create_cards(self, parent):
+        """
+        Create a rectangle for each card.
+
+        :type parent: lxml.etree._Element
+        """
         attributes = {"x": str(0),
                       "y": str(0),
-                      "width": str(self.cardWidth),
-                      "height": str(self.cardHeight),
+                      "width": str(self.CARD_WIDTH),
+                      "height": str(self.CARD_HEIGHT),
                       "stroke": "gray",
-                      "stroke-width": str(self.toUserUnit("1pt")),
+                      "stroke-width": str(self.to_user_unit("1pt")),
                       "fill": "none"}
 
-        for y in self.verticalPositions:
-            for x in self.horizontalPositions:
+        for y in self.vertical_card_positions:
+            for x in self.horizontal_card_positions:
                 attributes["transform"] = "translate({0},{1})".format(x, y)
                 inkex.etree.SubElement(parent, "rect", attributes)
 
-    def createFoldLine(self, parent):
+    def create_fold_line(self, parent):
+        """
+        Create a horizontal or vertical fold line.
+
+        :type parent: lxml.etree._Element
+        """
         attributes = {"stroke": "black",
-                      "stroke-width": str(self.toUserUnit("0.25pt")),
+                      "stroke-width": str(self.to_user_unit("0.25pt")),
                       "stroke-dasharray": "2,1",
                       "fill": "none"}
 
-        if self.foldLineType == HORIZONTAL_FOLD_LINE:
+        if self.FOLD_LINE_TYPE == HORIZONTAL_FOLD_LINE:
             attributes["d"] = "M 0,{0} H {1}".format(
-                self.foldLinePosition, self.pageWidth)
-        elif self.foldLineType == VERTICAL_FOLD_LINE:
+                self.fold_line_position, self.PAGE_WIDTH)
+        elif self.FOLD_LINE_TYPE == VERTICAL_FOLD_LINE:
             attributes["d"] = "M {0},0 V {1}".format(
-                self.foldLinePosition, self.pageHeight)
+                self.fold_line_position, self.PAGE_HEIGHT)
         else:
             return
 
         inkex.etree.SubElement(parent, "path", attributes)
 
-    def createCropLines(self, parent):
+    def create_crop_lines(self, parent):
+        """
+        Create horizontal and vertical crop lines.
+
+        :type parent: lxml.etree._Element
+        """
         attributes = {"stroke": "black",
-                      "stroke-width": str(self.toUserUnit("0.25pt")),
+                      "stroke-width": str(self.to_user_unit("0.25pt")),
                       "fill": "none"}
 
         # (begin, end) pairs for vertical crop line between bleeds
         pairs = []
         begin = 0
-        for y in self.verticalPositions:
-            end = y - self.bleedSize
+        for y in self.vertical_card_positions:
+            end = y - self.BLEED_SIZE
             pairs.append((begin, end))
-            begin = end + self.cardHeight + 2.0 * self.bleedSize
-        pairs.append((begin, self.pageHeight))
+            begin = end + self.CARD_HEIGHT + 2.0 * self.BLEED_SIZE
+        pairs.append((begin, self.PAGE_HEIGHT))
 
         # One crop line consists of many short strokes
         attributes["d"] = " ".join(["M 0,{0} 0,{1}".format(begin, end)
                                     for (begin, end) in pairs])
 
         # Shifted copies of the crop line
-        for x in self.horizontalPositions:
+        for x in self.horizontal_card_positions:
             attributes["transform"] = "translate({0},0)".format(x)
             inkex.etree.SubElement(parent, "path", attributes)
             attributes["transform"] = "translate({0},0)".format(
-                x + self.cardWidth)
+                x + self.CARD_WIDTH)
             inkex.etree.SubElement(parent, "path", attributes)
 
         # (begin, end) pairs for horizontal crop line between bleeds
         pairs = []
         begin = 0
-        for x in self.horizontalPositions:
-            end = x - self.bleedSize
+        for x in self.horizontal_card_positions:
+            end = x - self.BLEED_SIZE
             pairs.append((begin, end))
-            begin = end + self.cardWidth + 2.0 * self.bleedSize
-        pairs.append((begin, self.pageWidth))
+            begin = end + self.CARD_WIDTH + 2.0 * self.BLEED_SIZE
+        pairs.append((begin, self.PAGE_WIDTH))
 
         # One crop line consists of many short strokes
         attributes["d"] = " ".join(["M {0},0 {1},0".format(begin, end)
                                     for (begin, end) in pairs])
 
         # Shifted copies of the crop line
-        for y in self.verticalPositions:
+        for y in self.vertical_card_positions:
             attributes["transform"] = "translate(0,{0})".format(y)
             inkex.etree.SubElement(parent, "path", attributes)
             attributes["transform"] = "translate(0,{0})".format(
-                y + self.cardHeight)
+                y + self.CARD_HEIGHT)
             inkex.etree.SubElement(parent, "path", attributes)
 
-    def createMargin(self, parent):
-        if self.pageMargin <= 0:
+    def create_margin(self, parent):
+        """
+        Create a rectangle for the page margin.
+
+        :type parent: lxml.etree._Element
+        """
+        if self.PAGE_MARGIN <= 0:
             return
 
-        attributes = {"x": str(self.pageMargin),
-                      "y": str(self.pageMargin),
-                      "width": str(self.pageWidth - 2.0 * self.pageMargin),
-                      "height": str(self.pageHeight - 2.0 * self.pageMargin),
+        attributes = {"x": str(self.PAGE_MARGIN),
+                      "y": str(self.PAGE_MARGIN),
+                      "width": str(self.PAGE_WIDTH - 2.0 * self.PAGE_MARGIN),
+                      "height": str(self.PAGE_HEIGHT - 2.0 * self.PAGE_MARGIN),
                       "stroke": "gray",
-                      "stroke-width": str(self.toUserUnit("0.25pt")),
+                      "stroke-width": str(self.to_user_unit("0.25pt")),
                       "stroke-dasharray": "0.5,0.5",
                       "fill": "none"}
 
         inkex.etree.SubElement(parent, "rect", attributes)
 
-    def createMask(self, parent):
+    def create_mask(self, parent):
+        """
+        Create a shape that masks everything but the cards.
+
+        :type parent: lxml.etree._Element
+        """
         attributes = {"stroke": "none",
                       "fill": "white",
                       "fill-rule": "evenodd"}
 
-        path = "M {0},{1} {2},{3} {4},{5} {6},{7} Z".format(
-            0, 0,
-            self.pageWidth, 0,
-            self.pageWidth, self.pageHeight,
-            0, self.pageHeight)
+        format_string = "M {left},{bottom} {right},{bottom} {right},{top} {left},{top} Z"
 
-        for y in self.verticalPositions:
-            for x in self.horizontalPositions:
-                path += " M {0},{1} {2},{3} {4},{5} {6},{7} Z".format(
-                    x, y,
-                    x + self.cardWidth, y,
-                    x + self.cardWidth, y + self.cardHeight,
-                    x, y + self.cardHeight)
+        path = format_string.format(
+            left=0, right=self.PAGE_WIDTH, bottom=0, top=self.PAGE_HEIGHT)
+
+        for bottom in self.vertical_card_positions:
+            top = bottom + self.CARD_HEIGHT
+            for left in self.horizontal_card_positions:
+                right = left + self.CARD_WIDTH
+                path += format_string.format(
+                    left=left, right=right, bottom=bottom, top=top)
 
         attributes["d"] = path
         inkex.etree.SubElement(parent, "path", attributes)
 
-    def effect(self):
-        self.getOptions()
-        self.calculatePositions()
 
-        nonPrintingLayer = self.createLayer("(template) cards and bleeds")
-        maskLayer = self.createLayer("(template) mask", isVisible=False)
-        printingLayer = self.createLayer("(template) fold and crop lines")
-
-        self.createFoldLine(printingLayer)
-        self.createMargin(printingLayer)
-        self.createMask(maskLayer)
-
-        bleedsGroup = self.createGroup(nonPrintingLayer, "bleeds")
-        self.createBleeds(bleedsGroup)
-
-        cardsGroup = self.createGroup(nonPrintingLayer, "cards")
-        self.createCards(cardsGroup)
-
-        cropLinesGroup = self.createGroup(printingLayer, "crop lines")
-        self.createCropLines(cropLinesGroup)
+def main():
+    extension = PlayingCardsExtension()
+    extension.affect()
 
 
 if __name__ == '__main__':
-    playingCardsExtension = PlayingCardsExtension()
-    playingCardsExtension.affect()
+    main()
