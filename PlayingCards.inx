@@ -47,9 +47,16 @@
         <option value="cm">cm</option>
         <option value="in">in</option>
       </param>
+      <param name="empty05" type="description" xml:space="preserve"> </param>
+      <param name="frameSpacing" type="float" min="0" max="1000" precision="3" gui-text="Distance between cards and frame">0</param>
+      <param name="frameSpacingUnit" type="optiongroup" appearance="minimal" gui-text=" ">
+        <option value="mm">mm</option>
+        <option value="cm">cm</option>
+        <option value="in">in</option>
+      </param>
     </page>
     <page name="pageMarks" gui-text="Fold line">
-      <param name="foldLineType" gui-text="Fold line" type="optiongroup">
+      <param name="foldLineType" gui-text="Fold line type" type="optiongroup">
         <option value="HorizontalFoldLine">Horizontal fold line</option>p
         <option value="VerticalFoldLine">Vertical fold line</option>
         <option value="NoFoldLine">No fold line</option>
@@ -63,6 +70,15 @@
         <option value="cm">cm</option>
         <option value="in">in</option>
       </param>
+    </page>
+    <page name="pageVisibility" gui-text="Visibility">
+      <param name="drawGuides" type="boolean" gui-text="Draw guides">true</param>
+      <param name="drawCards" type="boolean" gui-text="Draw cards">true</param>
+      <param name="drawBleeds" type="boolean" gui-text="Draw bleeds">true</param>
+      <param name="drawCropLines" type="boolean" gui-text="Draw crop lines">true</param>
+      <param name="drawFoldLine" type="boolean" gui-text="Draw fold line">true</param>
+      <param name="drawPageMargin" type="boolean" gui-text="Draw page margin">false</param>
+      <param name="drawFrame" type="boolean" gui-text="Draw frame">true</param>
     </page>
   </param>
   <effect>

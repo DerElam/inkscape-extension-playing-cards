@@ -170,7 +170,7 @@ def calculate_positions_without_fold_line(page_size, margin_size, card_size,
     :param page_size: The width or height of the page.
     :type page_size: float
     :param margin_size: The empty margin of the page. Nothing will be placed in
-    the margin.
+    the margin except for the frame.
     :type margin_size: float
     :param card_size: The width or height of each card.
     :type card_size: float
@@ -335,6 +335,14 @@ class PlayingCardsExtension(inkex.Effect):
     GRID_SIZE = None
     ALIGN_TO_GRID = None
     FOLD_LINE_TYPE = None
+    FRAME_SPACING = None
+    DRAW_GUIDES = None
+    DRAW_CARDS = None
+    DRAW_BLEEDS = None
+    DRAW_CROP_LINES = None
+    DRAW_FOLD_LINE = None
+    DRAW_PAGE_MARGIN = None
+    DRAW_FRAME = None
 
     USER_UNIT = None                 # The unit used in the document
     horizontal_card_positions = None # Calculated horizontal positions
@@ -404,6 +412,14 @@ class PlayingCardsExtension(inkex.Effect):
                                      choices=UNITS.keys(),
                                      action="store")
 
+        self.OptionParser.add_option("--frameSpacing",
+                                     type="float",
+                                     action="store")
+        self.OptionParser.add_option("--frameSpacingUnit",
+                                     type="choice",
+                                     choices=UNITS.keys(),
+                                     action="store")
+
         self.OptionParser.add_option("--gridSize",
                                      type="float",
                                      action="store")
@@ -418,6 +434,27 @@ class PlayingCardsExtension(inkex.Effect):
         self.OptionParser.add_option("--foldLineType",
                                      type="choice",
                                      choices=FOLD_LINE_TYPES,
+                                     action="store")
+        self.OptionParser.add_option("--drawGuides",
+                                     type="inkbool",
+                                     action="store")
+        self.OptionParser.add_option("--drawCards",
+                                     type="inkbool",
+                                     action="store")
+        self.OptionParser.add_option("--drawBleeds",
+                                     type="inkbool",
+                                     action="store")
+        self.OptionParser.add_option("--drawCropLines",
+                                     type="inkbool",
+                                     action="store")
+        self.OptionParser.add_option("--drawFoldLine",
+                                     type="inkbool",
+                                     action="store")
+        self.OptionParser.add_option("--drawPageMargin",
+                                     type="inkbool",
+                                     action="store")
+        self.OptionParser.add_option("--drawFrame",
+                                     type="inkbool",
                                      action="store")
 
     def init_user_unit(self):
@@ -488,8 +525,18 @@ class PlayingCardsExtension(inkex.Effect):
         self.PAGE_MARGIN = self.to_user_unit(
             make_quantity(self.options.pageMargin,
                           self.options.pageMarginUnit))
+        self.FRAME_SPACING = self.to_user_unit(
+            make_quantity(self.options.frameSpacing,
+                          self.options.frameSpacingUnit))
         self.ALIGN_TO_GRID = self.options.gridAligned
         self.FOLD_LINE_TYPE = self.options.foldLineType
+        self.DRAW_GUIDES = self.options.drawGuides
+        self.DRAW_CARDS = self.options.drawCards
+        self.DRAW_BLEEDS = self.options.drawBleeds
+        self.DRAW_CROP_LINES = self.options.drawCropLines
+        self.DRAW_FOLD_LINE = self.options.drawFoldLine
+        self.DRAW_PAGE_MARGIN = self.options.drawPageMargin
+        self.DRAW_FRAME = self.options.drawFrame
 
     def effect(self):
         self.init_user_unit()
@@ -497,22 +544,32 @@ class PlayingCardsExtension(inkex.Effect):
 
         self.calculate_positions()
 
-        non_printing_layer = self.create_layer("(template) cards and bleeds")
-        mask_layer = self.create_layer("(template) mask", is_visible=False)
-        printing_layer = self.create_layer("(template) fold and crop lines")
+        # Create one layer for the things that we want to print and another
+        # layer for things that we don't want to print but are useful while
+        # working on the cards.
+        non_printing_layer = self.create_layer("(template) non printing")
+        printing_layer = self.create_layer("(template) printing")
 
-        self.create_fold_line(printing_layer)
-        self.create_margin(printing_layer)
-        self.create_mask(mask_layer)
+        if self.DRAW_GUIDES:
+            self.create_guides()
 
-        bleeds_group = self.create_group(non_printing_layer, "bleeds")
-        self.create_bleeds(bleeds_group)
+        if self.DRAW_CARDS:
+            self.create_cards(non_printing_layer)
 
-        cards_group = self.create_group(non_printing_layer, "cards")
-        self.create_cards(cards_group)
+        if self.DRAW_BLEEDS:
+            self.create_bleeds(non_printing_layer)
 
-        crop_lines_group = self.create_group(printing_layer, "crop lines")
-        self.create_crop_lines(crop_lines_group)
+        if self.DRAW_CROP_LINES:
+            self.create_crop_lines(printing_layer)
+
+        if self.DRAW_FOLD_LINE:
+            self.create_fold_line(printing_layer)
+
+        if self.DRAW_PAGE_MARGIN:
+            self.create_margin(non_printing_layer)
+
+        if self.DRAW_FRAME:
+            self.create_frame(printing_layer)
 
     def to_user_unit(self, quantity):
         """
@@ -538,6 +595,19 @@ class PlayingCardsExtension(inkex.Effect):
         The height is read from the document. It may or may not contain a unit.
         """
         return self.document.getroot().get("height")
+
+    def y_inkscape_to_svg(self, y):
+        """
+        Transform an inkscape coordinate to and svg coordinate.
+        
+        The origin in inkscape is the bottom left corner of the page. The 
+        origin in svg is the top left cornder of the page. Therefore the
+        y coordinate needs to be transformed.
+
+        :param y: the y coordinate in user units
+        :type y: float
+        """
+        return float(self.to_user_unit(self.document_height())) - y;
 
     def calculate_positions(self):
         """
@@ -632,6 +702,49 @@ class PlayingCardsExtension(inkex.Effect):
     # Functions related to the contents of the document
     # =================================================
 
+    def create_guide(self, x, y, orientation):
+        """
+        Create an arbitrary guide.
+
+        :type x: float
+        :type y: float
+        :type orientation: str
+        """
+        view = self.document.getroot().find(inkex.addNS("namedview", "sodipodi"))
+        guide = inkex.etree.SubElement(view, inkex.addNS("guide", "sodipodi"))
+        guide.set("orientation", orientation)
+        guide.set("position", "{0},{1}".format(x, self.y_inkscape_to_svg(y)))
+    
+    def create_horizontal_guide(self, y):
+        """
+        Create a horizontal guide.
+        """
+        self.create_guide(0, y, "0,1")
+
+    def create_vertical_guide(self, x):
+        """
+        Create a vertical guide.
+        """
+        self.create_guide(x, 0, "1,0")
+
+    def create_guides(self):
+        """
+        Create guides at all sides of all cards and bleeds.
+        """
+        for x in self.horizontal_card_positions:
+            self.create_vertical_guide(x)
+            self.create_vertical_guide(x + self.CARD_WIDTH)
+            if self.BLEED_SIZE > 0:
+                self.create_vertical_guide(x - self.BLEED_SIZE)
+                self.create_vertical_guide(x + self.CARD_WIDTH + self.BLEED_SIZE)
+
+        for y in self.vertical_card_positions:
+            self.create_horizontal_guide(y)
+            self.create_horizontal_guide(y + self.CARD_HEIGHT)
+            if self.BLEED_SIZE > 0:
+                self.create_horizontal_guide(y - self.BLEED_SIZE)
+                self.create_horizontal_guide(y + self.CARD_HEIGHT + self.BLEED_SIZE)
+
     def create_bleeds(self, parent):
         """
         Creates a rectangle for each bleed.
@@ -645,7 +758,7 @@ class PlayingCardsExtension(inkex.Effect):
                       "y": str(-self.BLEED_SIZE),
                       "width": str(self.CARD_WIDTH + 2.0 * self.BLEED_SIZE),
                       "height": str(self.CARD_HEIGHT + 2.0 * self.BLEED_SIZE),
-                      "stroke": "gray",
+                      "stroke": "black",
                       "stroke-width": str(self.to_user_unit("0.25pt")),
                       "fill": "none"}
 
@@ -664,8 +777,8 @@ class PlayingCardsExtension(inkex.Effect):
                       "y": str(0),
                       "width": str(self.CARD_WIDTH),
                       "height": str(self.CARD_HEIGHT),
-                      "stroke": "gray",
-                      "stroke-width": str(self.to_user_unit("1pt")),
+                      "stroke": "black",
+                      "stroke-width": str(self.to_user_unit("0.25pt")),
                       "fill": "none"}
 
         for y in self.vertical_card_positions:
@@ -681,7 +794,6 @@ class PlayingCardsExtension(inkex.Effect):
         """
         attributes = {"stroke": "black",
                       "stroke-width": str(self.to_user_unit("0.25pt")),
-                      "stroke-dasharray": "2,1",
                       "fill": "none"}
 
         if self.FOLD_LINE_TYPE == HORIZONTAL_FOLD_LINE:
@@ -760,37 +872,37 @@ class PlayingCardsExtension(inkex.Effect):
                       "y": str(self.PAGE_MARGIN),
                       "width": str(self.PAGE_WIDTH - 2.0 * self.PAGE_MARGIN),
                       "height": str(self.PAGE_HEIGHT - 2.0 * self.PAGE_MARGIN),
-                      "stroke": "gray",
+                      "stroke": "black",
                       "stroke-width": str(self.to_user_unit("0.25pt")),
                       "stroke-dasharray": "0.5,0.5",
                       "fill": "none"}
 
         inkex.etree.SubElement(parent, "rect", attributes)
-
-    def create_mask(self, parent):
+    
+    def create_frame(self, parent):
         """
-        Create a shape that masks everything but the cards.
-
-        :type parent: lxml.etree._Element
+        Create a frame around the cards.
         """
-        attributes = {"stroke": "none",
-                      "fill": "white",
-                      "fill-rule": "evenodd"}
 
-        format_string = "M {left},{bottom} {right},{bottom} {right},{top} {left},{top} Z"
+        XMIN = min(self.horizontal_card_positions)
+        XMAX = max(self.horizontal_card_positions)
+        YMIN = min(self.vertical_card_positions)
+        YMAX = max(self.vertical_card_positions)
 
-        path = format_string.format(
-            left=0, right=self.PAGE_WIDTH, bottom=0, top=self.PAGE_HEIGHT)
+        LEFT = XMIN - self.FRAME_SPACING
+        BOTTOM = YMIN - self.FRAME_SPACING
+        WIDTH = XMAX - XMIN + self.CARD_WIDTH + 2 * self.FRAME_SPACING
+        HEIGHT = YMAX - YMIN + self.CARD_HEIGHT + 2 * self.FRAME_SPACING
 
-        for bottom in self.vertical_card_positions:
-            top = bottom + self.CARD_HEIGHT
-            for left in self.horizontal_card_positions:
-                right = left + self.CARD_WIDTH
-                path += format_string.format(
-                    left=left, right=right, bottom=bottom, top=top)
+        attributes = {"x": str(LEFT),
+                      "y": str(BOTTOM),
+                      "width": str(WIDTH),
+                      "height": str(HEIGHT),
+                      "stroke": "black",
+                      "stroke-width": str(self.to_user_unit("0.25pt")),
+                      "fill": "none"}
 
-        attributes["d"] = path
-        inkex.etree.SubElement(parent, "path", attributes)
+        inkex.etree.SubElement(parent, "rect", attributes)
 
 
 def main():
