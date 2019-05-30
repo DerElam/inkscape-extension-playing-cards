@@ -884,6 +884,11 @@ class PlayingCardsExtension(inkex.Effect):
         Create a frame around the cards.
         """
 
+        # If we don't have any cards we can't draw a frame around them
+        if len(self.horizontal_card_positions) == 0 or \
+           len(self.vertical_card_positions) == 0:
+            return
+
         XMIN = min(self.horizontal_card_positions)
         XMAX = max(self.horizontal_card_positions)
         YMIN = min(self.vertical_card_positions)
