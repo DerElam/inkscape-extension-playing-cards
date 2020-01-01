@@ -330,6 +330,7 @@ class PlayingCardsExtension(inkex.Effect):
     CARD_HEIGHT = None
     BLEED_SIZE = None
     MIN_CARD_SPACING = None
+    CROP_MARK_SPACING = None
     MIN_FOLD_LINE_SPACING = None
     PAGE_MARGIN = None
     GRID_SIZE = None
@@ -392,6 +393,14 @@ class PlayingCardsExtension(inkex.Effect):
                                      type="float",
                                      action="store")
         self.OptionParser.add_option("--minCardSpacingUnit",
+                                     type="choice",
+                                     choices=UNITS.keys(),
+                                     action="store")
+
+        self.OptionParser.add_option("--cropMarkSpacing",
+                                     type="float",
+                                     action="store")
+        self.OptionParser.add_option("--cropMarkSpacingUnit",
                                      type="choice",
                                      choices=UNITS.keys(),
                                      action="store")
@@ -519,6 +528,9 @@ class PlayingCardsExtension(inkex.Effect):
         self.MIN_CARD_SPACING = self.to_user_unit(
             make_quantity(self.options.minCardSpacing,
                           self.options.minCardSpacingUnit))
+        self.CROP_MARK_SPACING = self.to_user_unit(
+            make_quantity(self.options.cropMarkSpacing,
+                          self.options.cropMarkSpacingUnit))
         self.MIN_FOLD_LINE_SPACING = self.to_user_unit(
             make_quantity(self.options.minFoldLineSpacing,
                           self.options.minFoldLineSpacingUnit))
@@ -821,9 +833,13 @@ class PlayingCardsExtension(inkex.Effect):
         pairs = []
         begin = 0
         for y in self.vertical_card_positions:
-            end = y - self.BLEED_SIZE
-            pairs.append((begin, end))
-            begin = end + self.CARD_HEIGHT + 2.0 * self.BLEED_SIZE
+            end = y - self.BLEED_SIZE - self.CROP_MARK_SPACING
+            # Only add lines if they fit between two bleeds
+            if end - begin >= EPSILON:
+                pairs.append((begin, end))
+            begin = end + self.CARD_HEIGHT \
+                + 2.0 * self.BLEED_SIZE \
+                + 2.0 * self.CROP_MARK_SPACING
         pairs.append((begin, self.PAGE_HEIGHT))
 
         # One crop line consists of many short strokes
@@ -842,9 +858,13 @@ class PlayingCardsExtension(inkex.Effect):
         pairs = []
         begin = 0
         for x in self.horizontal_card_positions:
-            end = x - self.BLEED_SIZE
-            pairs.append((begin, end))
-            begin = end + self.CARD_WIDTH + 2.0 * self.BLEED_SIZE
+            end = x - self.BLEED_SIZE - self.CROP_MARK_SPACING
+            # Only add lines if they fit between two bleeds
+            if end - begin >= EPSILON:
+                pairs.append((begin, end))
+            begin = end + self.CARD_WIDTH \
+                + 2.0 * self.BLEED_SIZE \
+                + 2.0 * self.CROP_MARK_SPACING
         pairs.append((begin, self.PAGE_WIDTH))
 
         # One crop line consists of many short strokes

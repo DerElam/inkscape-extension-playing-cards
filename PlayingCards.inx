@@ -41,13 +41,20 @@
         <option value="in">in</option>
       </param>
       <param name="empty04" type="description" xml:space="preserve"> </param>
+      <param name="cropMarkSpacing" type="float" min="0" max="1000" precision="3" gui-text="Distance between crop marks and bleed">1</param>
+      <param name="cropMarkSpacingUnit" type="optiongroup" appearance="minimal" gui-text=" ">
+        <option value="mm">mm</option>
+        <option value="cm">cm</option>
+        <option value="in">in</option>
+      </param>
+      <param name="empty05" type="description" xml:space="preserve"> </param>
       <param name="pageMargin" type="float" min="0" max="1000" precision="3" gui-text="Page margin">5</param>
       <param name="pageMarginUnit" type="optiongroup" appearance="minimal" gui-text=" ">
         <option value="mm">mm</option>
         <option value="cm">cm</option>
         <option value="in">in</option>
       </param>
-      <param name="empty05" type="description" xml:space="preserve"> </param>
+      <param name="empty06" type="description" xml:space="preserve"> </param>
       <param name="frameSpacing" type="float" min="0" max="1000" precision="3" gui-text="Distance between cards and frame">0</param>
       <param name="frameSpacingUnit" type="optiongroup" appearance="minimal" gui-text=" ">
         <option value="mm">mm</option>
