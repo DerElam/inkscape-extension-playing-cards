@@ -40,7 +40,10 @@ def round_up(value, grid_size):
     :type grid_size: float
     :rtype: float
     """
-    return ceil(value / grid_size - EPSILON) * grid_size
+    try:
+        return ceil(value / grid_size - EPSILON) * grid_size
+    except ZeroDivisionError:
+        return value
 
 
 def round_down(value, grid_size):
@@ -51,7 +54,10 @@ def round_down(value, grid_size):
     :type grid_size: float
     :rtype: float
      """
-    return floor(value / grid_size + EPSILON) * grid_size
+    try:
+        return floor(value / grid_size + EPSILON) * grid_size
+    except ZeroDivisionError:
+        return value
 
 
 def mirror_at(value, at):
