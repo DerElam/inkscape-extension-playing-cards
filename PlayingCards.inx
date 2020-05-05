@@ -5,62 +5,88 @@
   <dependency type="executable" location="extensions">PlayingCards.py</dependency>
   <param name="pageName" type="notebook">
     <page name="pageCards" gui-text="Cards">
-      <param name="cardWidth" type="float" min="0" max="1000" precision="3" gui-text="Width">2.5</param>
-      <param name="cardWidthUnit" type="optiongroup" appearance="combo" gui-text=" ">
-        <option value="in">in</option>
-        <option value="mm">mm</option>
-        <option value="cm">cm</option>
-      </param>
-      <param name="empty01" type="description" xml:space="preserve"> </param>
-      <param name="cardHeight" type="float" min="0" max="1000" precision="3" gui-text="Height">3.5</param>
-      <param name="cardHeightUnit" type="optiongroup" appearance="combo" gui-text=" ">
-        <option value="in">in</option>
-        <option value="mm">mm</option>
-        <option value="cm">cm</option>
-      </param>
-      <param name="empty02" type="description" xml:space="preserve"> </param>
-      <param name="bleedSize" type="float" min="0" max="1000" precision="3" gui-text="Bleed size">1</param>
-      <param name="bleedSizeUnit" type="optiongroup" appearance="radio" gui-text=" ">
-        <option value="mm">mm</option>
-        <option value="cm">cm</option>
-        <option value="in">in</option>
-      </param>
+      <hbox>
+        <label>Width</label>
+        <spacer size="expand"/>
+        <param name="cardWidth" type="float" min="0" max="1000" precision="3" gui-text="">2.5</param>
+        <param name="cardWidthUnit" type="optiongroup" appearance="combo" gui-text=" ">
+          <option value="in">in</option>
+          <option value="mm">mm</option>
+          <option value="cm">cm</option>
+        </param>
+      </hbox>
+      <hbox>
+        <label>Height</label>
+        <spacer size="expand"/>
+        <param name="cardHeight" type="float" min="0" max="1000" precision="3" gui-text="">3.5</param>
+        <param name="cardHeightUnit" type="optiongroup" appearance="combo" gui-text=" ">
+          <option value="in">in</option>
+          <option value="mm">mm</option>
+          <option value="cm">cm</option>
+        </param>
+        </hbox>
+      <hbox>
+        <label>Bleed size</label>
+        <spacer size="expand"/>
+        <param name="bleedSize" type="float" min="0" max="1000" precision="3" gui-text="">1</param>
+        <param name="bleedSizeUnit" type="optiongroup" appearance="combo" gui-text=" ">
+          <option value="mm">mm</option>
+          <option value="cm">cm</option>
+          <option value="in">in</option>
+        </param>
+      </hbox>
     </page>
     <page name="pageMargins" gui-text="Margins">
-      <param name="minCardSpacing" type="float" min="0" max="1000" precision="3" gui-text="Minimal distance between cards">0</param>
-      <param name="minCardSpacingUnit" type="optiongroup" appearance="radio" gui-text=" ">
-        <option value="mm">mm</option>
-        <option value="cm">cm</option>
-        <option value="in">in</option>
-      </param>
-      <param name="empty03" type="description" xml:space="preserve"> </param>
-      <param name="minFoldLineSpacing" type="float" min="0" max="1000" precision="3" gui-text="Minimal distance between cards and fold line">5</param>
-      <param name="minFoldLineSpacingUnit" type="optiongroup" appearance="radio" gui-text=" ">
-        <option value="mm">mm</option>
-        <option value="cm">cm</option>
-        <option value="in">in</option>
-      </param>
-      <param name="empty04" type="description" xml:space="preserve"> </param>
-      <param name="cropMarkSpacing" type="float" min="0" max="1000" precision="3" gui-text="Distance between crop marks and bleed">1</param>
-      <param name="cropMarkSpacingUnit" type="optiongroup" appearance="radio" gui-text=" ">
-        <option value="mm">mm</option>
-        <option value="cm">cm</option>
-        <option value="in">in</option>
-      </param>
-      <param name="empty05" type="description" xml:space="preserve"> </param>
-      <param name="pageMargin" type="float" min="0" max="1000" precision="3" gui-text="Page margin">5</param>
-      <param name="pageMarginUnit" type="optiongroup" appearance="radio" gui-text=" ">
-        <option value="mm">mm</option>
-        <option value="cm">cm</option>
-        <option value="in">in</option>
-      </param>
-      <param name="empty06" type="description" xml:space="preserve"> </param>
-      <param name="frameSpacing" type="float" min="0" max="1000" precision="3" gui-text="Distance between cards and frame">0</param>
-      <param name="frameSpacingUnit" type="optiongroup" appearance="radio" gui-text=" ">
-        <option value="mm">mm</option>
-        <option value="cm">cm</option>
-        <option value="in">in</option>
-      </param>
+      <hbox>
+        <label>Minimal distance between cards</label>
+        <spacer size="expand"/>
+        <param name="minCardSpacing" type="float" min="0" max="1000" precision="3" gui-text="">0</param>
+        <param name="minCardSpacingUnit" type="optiongroup" appearance="combo" gui-text=" ">
+          <option value="mm">mm</option>
+          <option value="cm">cm</option>
+          <option value="in">in</option>
+        </param>
+      </hbox>
+      <hbox>
+        <label>Minimal distance between cards and fold line</label>
+        <spacer size="expand"/>
+        <param name="minFoldLineSpacing" type="float" min="0" max="1000" precision="3" gui-text="">5</param>
+        <param name="minFoldLineSpacingUnit" type="optiongroup" appearance="combo" gui-text=" ">
+          <option value="mm">mm</option>
+          <option value="cm">cm</option>
+          <option value="in">in</option>
+        </param>
+      </hbox>
+      <hbox>
+        <label>Distance between crop marks and bleed</label>
+        <spacer size="expand"/>
+        <param name="cropMarkSpacing" type="float" min="0" max="1000" precision="3" gui-text="">1</param>
+        <param name="cropMarkSpacingUnit" type="optiongroup" appearance="combo" gui-text=" ">
+          <option value="mm">mm</option>
+          <option value="cm">cm</option>
+          <option value="in">in</option>
+        </param>
+      </hbox>
+      <hbox>
+        <label>Page margin</label>
+        <spacer size="expand"/>
+        <param name="pageMargin" type="float" min="0" max="1000" precision="3" gui-text="">5</param>
+        <param name="pageMarginUnit" type="optiongroup" appearance="combo" gui-text=" ">
+          <option value="mm">mm</option>
+          <option value="cm">cm</option>
+          <option value="in">in</option>
+        </param>
+      </hbox>
+      <hbox>
+        <label>Distance between cards and frame</label>
+        <spacer size="expand"/>
+        <param name="frameSpacing" type="float" min="0" max="1000" precision="3" gui-text="">0</param>
+        <param name="frameSpacingUnit" type="optiongroup" appearance="combo" gui-text=" ">
+          <option value="mm">mm</option>
+          <option value="cm">cm</option>
+          <option value="in">in</option>
+        </param>
+      </hbox>
     </page>
     <page name="pageMarks" gui-text="Fold line">
       <param name="foldLineType" gui-text="Fold line type" type="optiongroup">
@@ -71,12 +97,16 @@
     </page>
     <page name="pageAlignment" gui-text="Alignment">
       <param name="gridAligned" type="bool" gui-text="Align cards to grid">true</param>
-      <param name="gridSize" type="float" min="0" max="1000" precision="3" gui-text="Grid spacing">5</param>
-      <param name="gridSizeUnit" type="optiongroup" appearance="radio" gui-text=" ">
-        <option value="mm">mm</option>
-        <option value="cm">cm</option>
-        <option value="in">in</option>
-      </param>
+      <hbox>
+        <label>Grid spacing</label>
+        <spacer size="expand"/>
+        <param name="gridSize" type="float" min="0" max="1000" precision="3" gui-text="">5</param>
+        <param name="gridSizeUnit" type="optiongroup" appearance="combo" gui-text=" ">
+          <option value="mm">mm</option>
+          <option value="cm">cm</option>
+          <option value="in">in</option>
+        </param>
+      </hbox>
     </page>
     <page name="pageVisibility" gui-text="Visibility">
       <param name="drawGuides" type="bool" gui-text="Draw guides">true</param>
