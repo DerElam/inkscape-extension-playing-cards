@@ -1,4 +1,5 @@
 from math import ceil, floor
+from lxml import etree
 import re
 import inkex
 
@@ -624,7 +625,7 @@ class PlayingCardsExtension(inkex.Effect):
         :type label: str
         :rtype: lxml.etree._Element
         """
-        group = inkex.etree.SubElement(parent, "g")
+        group = etree.SubElement(parent, "g")
         group.set(inkex.addNS("label", "inkscape"), label)
         return group
 
@@ -664,7 +665,7 @@ class PlayingCardsExtension(inkex.Effect):
         :type orientation: str
         """
         view = self.document.getroot().find(inkex.addNS("namedview", "sodipodi"))
-        guide = inkex.etree.SubElement(view, inkex.addNS("guide", "sodipodi"))
+        guide = etree.SubElement(view, inkex.addNS("guide", "sodipodi"))
         guide.set("orientation", orientation)
         guide.set("position", "{0},{1}".format(x, self.y_inkscape_to_svg(y)))
     
@@ -718,7 +719,7 @@ class PlayingCardsExtension(inkex.Effect):
         for y in self.vertical_card_positions:
             for x in self.horizontal_card_positions:
                 attributes["transform"] = "translate({0},{1})".format(x, y)
-                inkex.etree.SubElement(parent, "rect", attributes)
+                etree.SubElement(parent, "rect", attributes)
 
     def create_cards(self, parent):
         """
@@ -737,7 +738,7 @@ class PlayingCardsExtension(inkex.Effect):
         for y in self.vertical_card_positions:
             for x in self.horizontal_card_positions:
                 attributes["transform"] = "translate({0},{1})".format(x, y)
-                inkex.etree.SubElement(parent, "rect", attributes)
+                etree.SubElement(parent, "rect", attributes)
 
     def create_fold_line(self, parent):
         """
@@ -758,7 +759,7 @@ class PlayingCardsExtension(inkex.Effect):
         else:
             return
 
-        inkex.etree.SubElement(parent, "path", attributes)
+        etree.SubElement(parent, "path", attributes)
 
     def create_crop_lines(self, parent):
         """
@@ -790,10 +791,10 @@ class PlayingCardsExtension(inkex.Effect):
         # Shifted copies of the crop line
         for x in self.horizontal_card_positions:
             attributes["transform"] = "translate({0},0)".format(x)
-            inkex.etree.SubElement(parent, "path", attributes)
+            etree.SubElement(parent, "path", attributes)
             attributes["transform"] = "translate({0},0)".format(
                 x + self.CARD_WIDTH)
-            inkex.etree.SubElement(parent, "path", attributes)
+            etree.SubElement(parent, "path", attributes)
 
         # (begin, end) pairs for horizontal crop line between bleeds
         pairs = []
@@ -815,10 +816,10 @@ class PlayingCardsExtension(inkex.Effect):
         # Shifted copies of the crop line
         for y in self.vertical_card_positions:
             attributes["transform"] = "translate(0,{0})".format(y)
-            inkex.etree.SubElement(parent, "path", attributes)
+            etree.SubElement(parent, "path", attributes)
             attributes["transform"] = "translate(0,{0})".format(
                 y + self.CARD_HEIGHT)
-            inkex.etree.SubElement(parent, "path", attributes)
+            etree.SubElement(parent, "path", attributes)
 
     def create_margin(self, parent):
         """
@@ -838,7 +839,7 @@ class PlayingCardsExtension(inkex.Effect):
                       "stroke-dasharray": "0.5,0.5",
                       "fill": "none"}
 
-        inkex.etree.SubElement(parent, "rect", attributes)
+        etree.SubElement(parent, "rect", attributes)
     
     def create_frame(self, parent):
         """
@@ -868,7 +869,7 @@ class PlayingCardsExtension(inkex.Effect):
                       "stroke-width": str(self.to_user_unit("0.25pt")),
                       "fill": "none"}
 
-        inkex.etree.SubElement(parent, "rect", attributes)
+        etree.SubElement(parent, "rect", attributes)
 
 
 def main():
