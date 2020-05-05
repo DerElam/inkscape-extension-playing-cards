@@ -357,120 +357,55 @@ class PlayingCardsExtension(inkex.Effect):
     fold_line_position = None        # Calculated position of the fold line
 
     def __init__(self):
-        """Initialize base class and its OptionParser."""
+        """Initialize base class and its arg_parser."""
         inkex.Effect.__init__(self)
-        self.init_option_parser()
+        self.init_arg_parser()
 
-    def init_option_parser(self):
+    def init_arg_parser(self):
         """
         Initialize the OptionParser with recognized parameters.
 
         The option names must be identical to those defined in the .inx file.
         The option values are later used to initialize the class constants.
         """
-        self.OptionParser.add_option("--pageName",
-                                     type="string")
+        self.arg_parser.add_argument("--pageName", type=str)
 
-        self.OptionParser.add_option("--cardWidth",
-                                     type="float",
-                                     action="store")
-        self.OptionParser.add_option("--cardWidthUnit",
-                                     type="choice",
-                                     choices=UNITS.keys(),
-                                     action="store")
+        self.arg_parser.add_argument("--cardWidth", type=float)
+        self.arg_parser.add_argument("--cardWidthUnit", choices=UNITS.keys())
 
-        self.OptionParser.add_option("--cardHeight",
-                                     type="float",
-                                     action="store")
-        self.OptionParser.add_option("--cardHeightUnit",
-                                     type="choice",
-                                     choices=UNITS.keys(),
-                                     action="store")
+        self.arg_parser.add_argument("--cardHeight", type=float)
+        self.arg_parser.add_argument("--cardHeightUnit", choices=UNITS.keys())
 
-        self.OptionParser.add_option("--bleedSize",
-                                     type="float",
-                                     action="store")
-        self.OptionParser.add_option("--bleedSizeUnit",
-                                     type="choice",
-                                     choices=UNITS.keys(),
-                                     action="store")
+        self.arg_parser.add_argument("--bleedSize", type=float, action="store")
+        self.arg_parser.add_argument("--bleedSizeUnit", choices=UNITS.keys())
 
-        self.OptionParser.add_option("--minCardSpacing",
-                                     type="float",
-                                     action="store")
-        self.OptionParser.add_option("--minCardSpacingUnit",
-                                     type="choice",
-                                     choices=UNITS.keys(),
-                                     action="store")
+        self.arg_parser.add_argument("--minCardSpacing", type=float)
+        self.arg_parser.add_argument("--minCardSpacingUnit", choices=UNITS.keys())
 
-        self.OptionParser.add_option("--cropMarkSpacing",
-                                     type="float",
-                                     action="store")
-        self.OptionParser.add_option("--cropMarkSpacingUnit",
-                                     type="choice",
-                                     choices=UNITS.keys(),
-                                     action="store")
+        self.arg_parser.add_argument("--cropMarkSpacing", type=float)
+        self.arg_parser.add_argument("--cropMarkSpacingUnit", choices=UNITS.keys())
 
-        self.OptionParser.add_option("--minFoldLineSpacing",
-                                     type="float",
-                                     action="store")
-        self.OptionParser.add_option("--minFoldLineSpacingUnit",
-                                     type="choice",
-                                     choices=UNITS.keys(),
-                                     action="store")
+        self.arg_parser.add_argument("--minFoldLineSpacing", type=float)
+        self.arg_parser.add_argument("--minFoldLineSpacingUnit", choices=UNITS.keys())
 
-        self.OptionParser.add_option("--pageMargin",
-                                     type="float",
-                                     action="store")
-        self.OptionParser.add_option("--pageMarginUnit",
-                                     type="choice",
-                                     choices=UNITS.keys(),
-                                     action="store")
+        self.arg_parser.add_argument("--pageMargin", type=float)
+        self.arg_parser.add_argument("--pageMarginUnit", choices=UNITS.keys())
 
-        self.OptionParser.add_option("--frameSpacing",
-                                     type="float",
-                                     action="store")
-        self.OptionParser.add_option("--frameSpacingUnit",
-                                     type="choice",
-                                     choices=UNITS.keys(),
-                                     action="store")
+        self.arg_parser.add_argument("--frameSpacing", type=float)
+        self.arg_parser.add_argument("--frameSpacingUnit", choices=UNITS.keys())
 
-        self.OptionParser.add_option("--gridSize",
-                                     type="float",
-                                     action="store")
-        self.OptionParser.add_option("--gridSizeUnit",
-                                     type="choice",
-                                     choices=UNITS.keys(),
-                                     action="store")
+        self.arg_parser.add_argument("--gridSize", type=float)
+        self.arg_parser.add_argument("--gridSizeUnit", choices=UNITS.keys())
 
-        self.OptionParser.add_option("--gridAligned",
-                                     type="inkbool",
-                                     action="store")
-        self.OptionParser.add_option("--foldLineType",
-                                     type="choice",
-                                     choices=FOLD_LINE_TYPES,
-                                     action="store")
-        self.OptionParser.add_option("--drawGuides",
-                                     type="inkbool",
-                                     action="store")
-        self.OptionParser.add_option("--drawCards",
-                                     type="inkbool",
-                                     action="store")
-        self.OptionParser.add_option("--drawBleeds",
-                                     type="inkbool",
-                                     action="store")
-        self.OptionParser.add_option("--drawCropLines",
-                                     type="inkbool",
-                                     action="store")
-        self.OptionParser.add_option("--drawFoldLine",
-                                     type="inkbool",
-                                     action="store")
-        self.OptionParser.add_option("--drawPageMargin",
-                                     type="inkbool",
-                                     action="store")
-        self.OptionParser.add_option("--drawFrame",
-                                     type="inkbool",
-                                     action="store")
+        self.arg_parser.add_argument("--gridAligned", type=inkex.Boolean)
+        self.arg_parser.add_argument("--foldLineType", choices=FOLD_LINE_TYPES)
+        self.arg_parser.add_argument("--drawGuides", type=inkex.Boolean)
+        self.arg_parser.add_argument("--drawCards", type=inkex.Boolean)
+        self.arg_parser.add_argument("--drawBleeds", type=inkex.Boolean)
+        self.arg_parser.add_argument("--drawCropLines", type=inkex.Boolean)
+        self.arg_parser.add_argument("--drawFoldLine", type=inkex.Boolean)
+        self.arg_parser.add_argument("--drawPageMargin", type=inkex.Boolean)
+        self.arg_parser.add_argument("--drawFrame", type=inkex.Boolean)
 
     def init_user_unit(self):
         """
