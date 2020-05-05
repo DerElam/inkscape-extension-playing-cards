@@ -70,7 +70,7 @@
       </param>
     </page>
     <page name="pageAlignment" gui-text="Alignment">
-      <param name="gridAligned" type="boolean" gui-text="Align cards to grid">true</param>
+      <param name="gridAligned" type="bool" gui-text="Align cards to grid">true</param>
       <param name="gridSize" type="float" min="0" max="1000" precision="3" gui-text="Grid spacing">5</param>
       <param name="gridSizeUnit" type="optiongroup" appearance="minimal" gui-text=" ">
         <option value="mm">mm</option>
@@ -79,13 +79,13 @@
       </param>
     </page>
     <page name="pageVisibility" gui-text="Visibility">
-      <param name="drawGuides" type="boolean" gui-text="Draw guides">true</param>
-      <param name="drawCards" type="boolean" gui-text="Draw cards">true</param>
-      <param name="drawBleeds" type="boolean" gui-text="Draw bleeds">true</param>
-      <param name="drawCropLines" type="boolean" gui-text="Draw crop lines">true</param>
-      <param name="drawFoldLine" type="boolean" gui-text="Draw fold line">true</param>
-      <param name="drawPageMargin" type="boolean" gui-text="Draw page margin">false</param>
-      <param name="drawFrame" type="boolean" gui-text="Draw frame">true</param>
+      <param name="drawGuides" type="bool" gui-text="Draw guides">true</param>
+      <param name="drawCards" type="bool" gui-text="Draw cards">true</param>
+      <param name="drawBleeds" type="bool" gui-text="Draw bleeds">true</param>
+      <param name="drawCropLines" type="bool" gui-text="Draw crop lines">true</param>
+      <param name="drawFoldLine" type="bool" gui-text="Draw fold line">true</param>
+      <param name="drawPageMargin" type="bool" gui-text="Draw page margin">false</param>
+      <param name="drawFrame" type="bool" gui-text="Draw frame">true</param>
     </page>
   </param>
   <effect>
