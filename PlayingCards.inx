@@ -8,7 +8,7 @@
       <hbox>
         <label>Width</label>
         <spacer size="expand"/>
-        <param name="cardWidth" type="float" min="0" max="1000" precision="3" gui-text="">2.5</param>
+        <param name="cardWidth" type="float" min="0" max="1000" precision="3" gui-text=" ">2.5</param>
         <param name="cardWidthUnit" type="optiongroup" appearance="combo" gui-text=" ">
           <option value="in">in</option>
           <option value="mm">mm</option>
@@ -18,7 +18,7 @@
       <hbox>
         <label>Height</label>
         <spacer size="expand"/>
-        <param name="cardHeight" type="float" min="0" max="1000" precision="3" gui-text="">3.5</param>
+        <param name="cardHeight" type="float" min="0" max="1000" precision="3" gui-text=" ">3.5</param>
         <param name="cardHeightUnit" type="optiongroup" appearance="combo" gui-text=" ">
           <option value="in">in</option>
           <option value="mm">mm</option>
@@ -28,7 +28,7 @@
       <hbox>
         <label>Bleed size</label>
         <spacer size="expand"/>
-        <param name="bleedSize" type="float" min="0" max="1000" precision="3" gui-text="">1</param>
+        <param name="bleedSize" type="float" min="0" max="1000" precision="3" gui-text=" ">1</param>
         <param name="bleedSizeUnit" type="optiongroup" appearance="combo" gui-text=" ">
           <option value="mm">mm</option>
           <option value="cm">cm</option>
@@ -40,7 +40,7 @@
       <hbox>
         <label>Minimal distance between cards</label>
         <spacer size="expand"/>
-        <param name="minCardSpacing" type="float" min="0" max="1000" precision="3" gui-text="">0</param>
+        <param name="minCardSpacing" type="float" min="0" max="1000" precision="3" gui-text=" ">0</param>
         <param name="minCardSpacingUnit" type="optiongroup" appearance="combo" gui-text=" ">
           <option value="mm">mm</option>
           <option value="cm">cm</option>
@@ -50,7 +50,7 @@
       <hbox>
         <label>Minimal distance between cards and fold line</label>
         <spacer size="expand"/>
-        <param name="minFoldLineSpacing" type="float" min="0" max="1000" precision="3" gui-text="">5</param>
+        <param name="minFoldLineSpacing" type="float" min="0" max="1000" precision="3" gui-text=" ">5</param>
         <param name="minFoldLineSpacingUnit" type="optiongroup" appearance="combo" gui-text=" ">
           <option value="mm">mm</option>
           <option value="cm">cm</option>
@@ -60,7 +60,7 @@
       <hbox>
         <label>Distance between crop marks and bleed</label>
         <spacer size="expand"/>
-        <param name="cropMarkSpacing" type="float" min="0" max="1000" precision="3" gui-text="">1</param>
+        <param name="cropMarkSpacing" type="float" min="0" max="1000" precision="3" gui-text=" ">1</param>
         <param name="cropMarkSpacingUnit" type="optiongroup" appearance="combo" gui-text=" ">
           <option value="mm">mm</option>
           <option value="cm">cm</option>
@@ -70,7 +70,7 @@
       <hbox>
         <label>Page margin</label>
         <spacer size="expand"/>
-        <param name="pageMargin" type="float" min="0" max="1000" precision="3" gui-text="">5</param>
+        <param name="pageMargin" type="float" min="0" max="1000" precision="3" gui-text=" ">5</param>
         <param name="pageMarginUnit" type="optiongroup" appearance="combo" gui-text=" ">
           <option value="mm">mm</option>
           <option value="cm">cm</option>
@@ -80,7 +80,7 @@
       <hbox>
         <label>Distance between cards and frame</label>
         <spacer size="expand"/>
-        <param name="frameSpacing" type="float" min="0" max="1000" precision="3" gui-text="">0</param>
+        <param name="frameSpacing" type="float" min="0" max="1000" precision="3" gui-text=" ">0</param>
         <param name="frameSpacingUnit" type="optiongroup" appearance="combo" gui-text=" ">
           <option value="mm">mm</option>
           <option value="cm">cm</option>
@@ -90,7 +90,7 @@
     </page>
     <page name="pageMarks" gui-text="Fold line">
       <param name="foldLineType" gui-text="Fold line type" type="optiongroup">
-        <option value="HorizontalFoldLine">Horizontal fold line</option>p
+        <option value="HorizontalFoldLine">Horizontal fold line</option>
         <option value="VerticalFoldLine">Vertical fold line</option>
         <option value="NoFoldLine">No fold line</option>
       </param>
@@ -100,7 +100,7 @@
       <hbox>
         <label>Grid spacing</label>
         <spacer size="expand"/>
-        <param name="gridSize" type="float" min="0" max="1000" precision="3" gui-text="">5</param>
+        <param name="gridSize" type="float" min="0" max="1000" precision="3" gui-text=" ">5</param>
         <param name="gridSizeUnit" type="optiongroup" appearance="combo" gui-text=" ">
           <option value="mm">mm</option>
           <option value="cm">cm</option>

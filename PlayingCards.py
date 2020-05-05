@@ -326,7 +326,7 @@ class PlayingCardsExtension(inkex.Effect):
 
     An instance of this class is created in main(). __init__() sets up the 
     OptionParser provided by the base class to recognize all needed command 
-    line parameters. Then in main() inkex.Effect.affect() is called which then 
+    line parameters. Then in main() inkex.Effect.run() is called which then 
     parses the command line and calls effect(). This is where we do our work.
     """
 
@@ -874,7 +874,7 @@ class PlayingCardsExtension(inkex.Effect):
 
 def main():
     extension = PlayingCardsExtension()
-    extension.affect()
+    extension.run()
 
 
 if __name__ == '__main__':
