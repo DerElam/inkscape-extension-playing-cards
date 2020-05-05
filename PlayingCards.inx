@@ -6,21 +6,21 @@
   <param name="pageName" type="notebook">
     <page name="pageCards" gui-text="Cards">
       <param name="cardWidth" type="float" min="0" max="1000" precision="3" gui-text="Width">2.5</param>
-      <param name="cardWidthUnit" type="optiongroup" appearance="minimal" gui-text=" ">
+      <param name="cardWidthUnit" type="optiongroup" appearance="combo" gui-text=" ">
         <option value="in">in</option>
         <option value="mm">mm</option>
         <option value="cm">cm</option>
       </param>
       <param name="empty01" type="description" xml:space="preserve"> </param>
       <param name="cardHeight" type="float" min="0" max="1000" precision="3" gui-text="Height">3.5</param>
-      <param name="cardHeightUnit" type="optiongroup" appearance="minimal" gui-text=" ">
+      <param name="cardHeightUnit" type="optiongroup" appearance="combo" gui-text=" ">
         <option value="in">in</option>
         <option value="mm">mm</option>
         <option value="cm">cm</option>
       </param>
       <param name="empty02" type="description" xml:space="preserve"> </param>
       <param name="bleedSize" type="float" min="0" max="1000" precision="3" gui-text="Bleed size">1</param>
-      <param name="bleedSizeUnit" type="optiongroup" appearance="minimal" gui-text=" ">
+      <param name="bleedSizeUnit" type="optiongroup" appearance="radio" gui-text=" ">
         <option value="mm">mm</option>
         <option value="cm">cm</option>
         <option value="in">in</option>
@@ -28,35 +28,35 @@
     </page>
     <page name="pageMargins" gui-text="Margins">
       <param name="minCardSpacing" type="float" min="0" max="1000" precision="3" gui-text="Minimal distance between cards">0</param>
-      <param name="minCardSpacingUnit" type="optiongroup" appearance="minimal" gui-text=" ">
+      <param name="minCardSpacingUnit" type="optiongroup" appearance="radio" gui-text=" ">
         <option value="mm">mm</option>
         <option value="cm">cm</option>
         <option value="in">in</option>
       </param>
       <param name="empty03" type="description" xml:space="preserve"> </param>
       <param name="minFoldLineSpacing" type="float" min="0" max="1000" precision="3" gui-text="Minimal distance between cards and fold line">5</param>
-      <param name="minFoldLineSpacingUnit" type="optiongroup" appearance="minimal" gui-text=" ">
+      <param name="minFoldLineSpacingUnit" type="optiongroup" appearance="radio" gui-text=" ">
         <option value="mm">mm</option>
         <option value="cm">cm</option>
         <option value="in">in</option>
       </param>
       <param name="empty04" type="description" xml:space="preserve"> </param>
       <param name="cropMarkSpacing" type="float" min="0" max="1000" precision="3" gui-text="Distance between crop marks and bleed">1</param>
-      <param name="cropMarkSpacingUnit" type="optiongroup" appearance="minimal" gui-text=" ">
+      <param name="cropMarkSpacingUnit" type="optiongroup" appearance="radio" gui-text=" ">
         <option value="mm">mm</option>
         <option value="cm">cm</option>
         <option value="in">in</option>
       </param>
       <param name="empty05" type="description" xml:space="preserve"> </param>
       <param name="pageMargin" type="float" min="0" max="1000" precision="3" gui-text="Page margin">5</param>
-      <param name="pageMarginUnit" type="optiongroup" appearance="minimal" gui-text=" ">
+      <param name="pageMarginUnit" type="optiongroup" appearance="radio" gui-text=" ">
         <option value="mm">mm</option>
         <option value="cm">cm</option>
         <option value="in">in</option>
       </param>
       <param name="empty06" type="description" xml:space="preserve"> </param>
       <param name="frameSpacing" type="float" min="0" max="1000" precision="3" gui-text="Distance between cards and frame">0</param>
-      <param name="frameSpacingUnit" type="optiongroup" appearance="minimal" gui-text=" ">
+      <param name="frameSpacingUnit" type="optiongroup" appearance="radio" gui-text=" ">
         <option value="mm">mm</option>
         <option value="cm">cm</option>
         <option value="in">in</option>
@@ -72,7 +72,7 @@
     <page name="pageAlignment" gui-text="Alignment">
       <param name="gridAligned" type="bool" gui-text="Align cards to grid">true</param>
       <param name="gridSize" type="float" min="0" max="1000" precision="3" gui-text="Grid spacing">5</param>
-      <param name="gridSizeUnit" type="optiongroup" appearance="minimal" gui-text=" ">
+      <param name="gridSizeUnit" type="optiongroup" appearance="radio" gui-text=" ">
         <option value="mm">mm</option>
         <option value="cm">cm</option>
         <option value="in">in</option>
