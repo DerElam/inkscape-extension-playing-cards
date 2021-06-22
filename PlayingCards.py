@@ -550,19 +550,6 @@ class PlayingCardsExtension(inkex.Effect):
         """
         return self.document.getroot().get("height")
 
-    def y_inkscape_to_svg(self, y):
-        """
-        Transform an inkscape coordinate to and svg coordinate.
-        
-        The origin in inkscape is the bottom left corner of the page. The 
-        origin in svg is the top left cornder of the page. Therefore the
-        y coordinate needs to be transformed.
-
-        :param y: the y coordinate in user units
-        :type y: float
-        """
-        return float(self.to_user_unit(self.document_height())) - y;
-
     def calculate_positions(self):
         """
         Calculate the horizontal and vertical positions of all cards.
@@ -667,7 +654,7 @@ class PlayingCardsExtension(inkex.Effect):
         view = self.document.getroot().find(inkex.addNS("namedview", "sodipodi"))
         guide = etree.SubElement(view, inkex.addNS("guide", "sodipodi"))
         guide.set("orientation", orientation)
-        guide.set("position", "{0},{1}".format(x, self.y_inkscape_to_svg(y)))
+        guide.set("position", "{0},{1}".format(x, y))
     
     def create_horizontal_guide(self, y):
         """
